@@ -13,7 +13,6 @@ setup(
     license="MIT",
     long_description=long_description,
     long_description_content_type="text/plain",
-    classifiers=[
     author="Mike Kasper",
     author_email="m_kasper@sbcglobal.net",
     url="https://github.com/mkmer/AIOSomecomfort",
