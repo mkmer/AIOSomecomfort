@@ -10,9 +10,9 @@ Installing
 
 ::
 
-  $ pip install somecomfort
+  $ pip install AIOSomecomfort
   $ test.py -h
-  usage: somecomfort [-h] [--get_fan_mode] [--set_fan_mode SET_FAN_MODE]
+  usage: test.py [-h] [--get_fan_mode] [--set_fan_mode SET_FAN_MODE]
                      [--get_system_mode] [--set_system_mode SET_SYSTEM_MODE]
                      [--get_setpoint_cool]
                      [--set_setpoint_cool SET_SETPOINT_COOL]
