@@ -1,0 +1,2 @@
+include somecomfort/*.py
+include *requirements.txt
