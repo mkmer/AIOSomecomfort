@@ -157,10 +157,10 @@ async def _main(session):
     )
 
     parser.add_argument(
-        "--username", help="username", default="mike.j.kasper@gmail.com"
+        "--username", help="username")
     )
-    parser.add_argument("--password", help="password", default="Letmein2")
-    parser.add_argument("--device", help="device", type=int, default="4048977")
+    parser.add_argument("--password", help="password")
+    parser.add_argument("--device", help="device", type=int)
     parser.add_argument(
         "--login",
         help="Just try to login",
