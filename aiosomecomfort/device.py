@@ -85,12 +85,11 @@ class Device(object):
             return FAN_MODES[self._data["fanData"]["fanMode"]]
         except (KeyError, TypeError, IndexError):
             if self._data["hasFan"]:
-                raise APIError(f"Unknown fan mode {self._data["fanData"]["fanMode"]}")
+                raise APIError(f'Unknown fan mode {self._data["fanData"]["fanMode"]}')
             else:
                 return None
 
-    @fan_mode.setter
-    def fan_mode(self, mode):
+    async def set_fan_mode(self, mode):
         try:
             mode_index = FAN_MODES.index(mode)
         except ValueError:
@@ -99,7 +98,9 @@ class Device(object):
         key = "fanMode%sAllowed" % mode.title()
         if not self._data["fanData"][key]:
             raise SomeComfortError(f"Device does not support {mode}")
-        self._client._set_thermostat_settings(self.deviceid, {"FanMode": mode_index})
+        await self._client._set_thermostat_settings(
+            self.deviceid, {"FanMode": mode_index}
+        )
         self._data["fanData"]["fanMode"] = mode_index
 
     @property
@@ -109,10 +110,10 @@ class Device(object):
             return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
         except KeyError:
             raise APIError(
-                "Unknown system mode {(self._data['uiData']['SystemSwitchPosition']}")
+                "Unknown system mode {(self._data['uiData']['SystemSwitchPosition']}"
+            )
 
-    @system_mode.setter
-    def system_mode(self, mode):
+    async def set_system_mode(self, mode):
         try:
             mode_index = SYSTEM_MODES.index(mode)
         except ValueError:
@@ -126,7 +127,7 @@ class Device(object):
                 raise SomeComfortError(f"Device does not support {mode}")
         except KeyError:
             raise APIError(f"Unknown Key: {key}")
-        self._client._set_thermostat_settings(
+        await self._client._set_thermostat_settings(
             self.deviceid, {"SystemSwitch": mode_index}
         )
         self._data["uiData"]["SystemSwitchPosition"] = mode_index
@@ -136,13 +137,14 @@ class Device(object):
         """The target temperature when in cooling mode"""
         return self._data["uiData"]["CoolSetpoint"]
 
-    @setpoint_cool.setter
-    def setpoint_cool(self, temp):
+    async def set_setpoint_cool(self, temp):
         lower = self._data["uiData"]["CoolLowerSetptLimit"]
         upper = self._data["uiData"]["CoolUpperSetptLimit"]
         if temp > upper or temp < lower:
             raise SomeComfortError("Setpoint outside range %.1f-%.1f" % (lower, upper))
-        self._client._set_thermostat_settings(self.deviceid, {"CoolSetpoint": temp})
+        await self._client._set_thermostat_settings(
+            self.deviceid, {"CoolSetpoint": temp}
+        )
         self._data["uiData"]["CoolSetpoint"] = temp
 
     @property
@@ -150,8 +152,7 @@ class Device(object):
         """The target temperature when in heating mode"""
         return self._data["uiData"]["HeatSetpoint"]
 
-    @setpoint_heat.setter
-    def setpoint_heat(self, temp):
+    async def set_setpoint_heat(self, temp):
         lower = self._data["uiData"]["HeatLowerSetptLimit"]
         upper = self._data["uiData"]["HeatUpperSetptLimit"]
         # HA sometimes doesn't send the temp, so set to current
@@ -160,7 +161,9 @@ class Device(object):
             _LOG.error("Didn't receive the temp to set. Setting to current temp.")
         if temp > upper or temp < lower:
             raise SomeComfortError("Setpoint outside range %.1f-%.1f" % (lower, upper))
-        self._client._set_thermostat_settings(self.deviceid, {"HeatSetpoint": temp})
+        await self._client._set_thermostat_settings(
+            self.deviceid, {"HeatSetpoint": temp}
+        )
         self._data["uiData"]["HeatSetpoint"] = temp
 
     def _get_hold(self, which):
@@ -178,7 +181,7 @@ class Device(object):
         else:
             return _hold_deadline(period)
 
-    def _set_hold(self, which, hold):
+    async def _set_hold(self, which, hold):
         if hold is True:
             settings = {
                 "Status%s" % which: HOLD_TYPES.index("permanent"),
@@ -198,24 +201,22 @@ class Device(object):
         else:
             raise SomeComfortError("Hold should be True, False, or datetime.time")
 
-        self._client._set_thermostat_settings(self.deviceid, settings)
+        await self._client._set_thermostat_settings(self.deviceid, settings)
         self._data["uiData"].update(settings)
 
     @property
     def hold_heat(self):
         return self._get_hold("Heat")
 
-    @hold_heat.setter
-    def hold_heat(self, value):
-        self._set_hold("Heat", value)
+    async def set_hold_heat(self, value):
+        await self._set_hold("Heat", value)
 
     @property
     def hold_cool(self):
         return self._get_hold("Cool")
 
-    @hold_cool.setter
-    def hold_cool(self, value):
-        self._set_hold("Cool", value)
+    async def set_hold_cool(self, value):
+        await self._set_hold("Cool", value)
 
     @property
     def current_temperature(self):

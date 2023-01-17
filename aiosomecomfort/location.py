@@ -1,4 +1,4 @@
-from aiosomecomfort.device import Device
+from .device import Device
 
 
 class Location(object):

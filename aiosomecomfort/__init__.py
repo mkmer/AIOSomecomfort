@@ -4,8 +4,8 @@ import datetime
 import logging
 from yarl import URL
 import urllib.parse as urllib
-from aiosomecomfort.location import Location
-from aiosomecomfort.device import (
+from .location import Location
+from .device import (
     AuthError,
     ConnectionError,
     SomeComfortError,
@@ -37,20 +37,20 @@ class AIOSomeComfort(object):
         self._password: str | None = password  # password
         self._session: aiohttp.ClientSession = session
         self._timeout = timeout
+        self._headers = {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Accept-Encoding": "gzip, deflate",
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
         self._locations = {}
         self._baseurl = "https://www.mytotalconnectcomfort.com"
         self._default_url = self._baseurl
 
     @_convert_errors
     async def login(self):
-        headers = {
-            "X-Requested-With": "XMLHttpRequest",
-            "Accept": "*/*",
-            "Connection": "keep-alive",
-            "Accept-Encoding": "gzip, deflate",
-        }
         url = f"{self._baseurl}/portal"
-        self._session.headers.update(headers)
         params = {
             "timeOffset": "480",
             "UserName": self._username,
@@ -59,10 +59,9 @@ class AIOSomeComfort(object):
         }
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
-        self._session.headers.update(
-            {"Content-Type": "application/x-www-form-urlencoded"}
+        resp = await self._session.post(
+            url, timeout=self._timeout, headers=self._headers
         )
-        resp = await self._session.post(url, timeout=self._timeout)
 
         # The TUREHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
         cookies = resp.cookies
@@ -76,10 +75,9 @@ class AIOSomeComfort(object):
             # right thing.
             _LOG.error(f"Login as {self._username} failed")
             raise AuthError(f"Login as {self._username} failed")
-
-        self._session.headers.pop("Content-Type")
+        self._headers.pop("Content-Type")
         resp2 = await self._session.get(
-            f"{self._baseurl}/portal", timeout=self._timeout
+            f"{self._baseurl}/portal", timeout=self._timeout, headers=self._headers
         )  # this should redirect if we're logged in
 
         # if we get null cookies for this, the login has failed.
@@ -102,6 +100,7 @@ class AIOSomeComfort(object):
     async def _request_json(self, method, *args, **kwargs):
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
+        kwargs["headers"] = self._headers
         resp = await getattr(self._session, method)(*args, **kwargs)
 
         # Check again for the deformed cookie
@@ -135,7 +134,7 @@ class AIOSomeComfort(object):
     async def _get_locations(self):
         url = f"{self._baseurl}/portal/Location/GetLocationListData/"
         params = {"page": 1, "filter": ""}
-        resp = await self._session.post(url, params=params)
+        resp = await self._session.post(url, params=params, headers=self._headers)
         if resp.content_type == "application/json":
             return await resp.json()
         return None
@@ -168,7 +167,9 @@ class AIOSomeComfort(object):
         url = URL(f"{self._baseurl}/portal", encoded=True)
 
         try:
-            resp = await self._session.get(url, timeout=self._timeout)
+            resp = await self._session.get(
+                url, timeout=self._timeout, headers=self._headers
+            )
         except aiohttp.ClientConnectionError:
             _LOG.error("Connection Error occurred.")
             raise ConnectionError()

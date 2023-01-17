@@ -4,4 +4,6 @@ AIOSomecomfort.egg-info/PKG-INFO
 AIOSomecomfort.egg-info/requires.txt
 AIOSomecomfort.egg-info/SOURCES.txt
 AIOSomecomfort.egg-info/top_level.txt
-dist/AIOSomecomfort-0.0.1.tar.gz
+dist/
+__pycache__/
+test dont share.py

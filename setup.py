@@ -8,7 +8,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name="AIOSomecomfort",
-    version="0.0.1",
+    version="0.0.2",
     description="A client for Honeywell's US-based cloud devices",
     license="MIT",
     long_description=long_description,
@@ -16,7 +16,7 @@ setup(
     author="Mike Kasper",
     author_email="m_kasper@sbcglobal.net",
     url="https://github.com/mkmer/AIOSomecomfort",
-    download_url="https://github.com/mkmer/AIOSomecomfort/archive/refs/tags/0.0.1.tar.gz",
+    download_url="https://github.com/mkmer/AIOSomecomfort/archive/refs/tags/0.0.2.tar.gz",
     packages=["AIOSomecomfort"],
     classifiers=[
         "Development Status :: 4 - Beta",
