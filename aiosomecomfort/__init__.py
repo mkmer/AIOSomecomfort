@@ -139,8 +139,7 @@ class AIOSomeComfort(object):
             resp = await self._session.post(url, params=params, headers=self._headers)
             if resp.content_type == "application/json":
                 response = await resp.json()
-                if len(response) > 0:
-                    json_responses.extend(response)
+                json_responses.extend(response)
 
         if len(json_responses) > 0:
             return json_responses
