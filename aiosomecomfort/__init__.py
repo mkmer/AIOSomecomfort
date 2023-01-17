@@ -1,6 +1,6 @@
 import __future__
 import aiohttp
-import datetime
+import json
 import logging
 from yarl import URL
 import urllib.parse as urllib
@@ -132,11 +132,18 @@ class AIOSomeComfort(object):
         return await self._request_json("post", *args, **kwargs)
 
     async def _get_locations(self):
+        json_responses: list = []
         url = f"{self._baseurl}/portal/Location/GetLocationListData/"
-        params = {"page": 1, "filter": ""}
-        resp = await self._session.post(url, params=params, headers=self._headers)
-        if resp.content_type == "application/json":
-            return await resp.json()
+        for page in {1, 2, 3, 4}:
+            params = {"page": page, "filter": ""}
+            resp = await self._session.post(url, params=params, headers=self._headers)
+            if resp.content_type == "application/json":
+                response = await resp.json()
+                if len(response) > 0:
+                    json_responses.extend(response)
+
+        if len(json_responses) > 0:
+            return json_responses
         return None
 
     async def _get_thermostat_data(self, thermostat_id):
