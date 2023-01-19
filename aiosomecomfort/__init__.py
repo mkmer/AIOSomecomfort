@@ -1,19 +1,10 @@
 import __future__
 import aiohttp
-import json
 import logging
 from yarl import URL
 import urllib.parse as urllib
 from .location import Location
-from .device import (
-    AuthError,
-    ConnectionError,
-    SomeComfortError,
-    APIRateLimited,
-    ServiceUnavailable,
-    ConnectionTimeout,
-    APIError,
-)
+from .exceptions import *
 
 
 _LOG = logging.getLogger("somecomfort")

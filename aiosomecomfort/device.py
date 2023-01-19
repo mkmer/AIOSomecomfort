@@ -3,6 +3,7 @@ import copy
 import datetime
 import logging
 import time
+from .exceptions import *
 
 FAN_MODES = ["auto", "on", "circulate", "follow schedule"]
 SYSTEM_MODES = ["emheat", "heat", "off", "cool", "auto", "auto"]
@@ -283,35 +284,3 @@ class Device(object):
 
     def __repr__(self):
         return f"Device<{self.deviceid}:{self.name}>"
-
-
-class SomeComfortError(Exception):
-    pass
-
-
-class ConnectionTimeout(SomeComfortError):
-    pass
-
-
-class ConnectionError(SomeComfortError):
-    pass
-
-
-class AuthError(SomeComfortError):
-    pass
-
-
-class APIError(SomeComfortError):
-    pass
-
-
-class APIRateLimited(SomeComfortError):
-    pass
-
-
-class SessionTimedOut(SomeComfortError):
-    pass
-
-
-class ServiceUnavailable(SomeComfortError):
-    pass
