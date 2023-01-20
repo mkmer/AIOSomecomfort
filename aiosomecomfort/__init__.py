@@ -60,12 +60,16 @@ class AIOSomeComfort(object):
             cookies[".ASPXAUTH_TRUEHOME"]["expires"] = ""
             self._session.cookie_jar.update_cookies(cookies=cookies)
 
-        if resp.status != 200:
+        if resp.status == 401:
             # This never seems to happen currently, but
             # I'll leave it here in case they start doing the
             # right thing.
             _LOG.error(f"Login as {self._username} failed")
             raise AuthError(f"Login as {self._username} failed")
+        elif resp.status != 200:
+            _LOG.error("Connection error %s", resp.status)
+            raise (f"Connection error {resp.status}")
+
         self._headers.pop("Content-Type")
         resp2 = await self._session.get(
             f"{self._baseurl}/portal", timeout=self._timeout, headers=self._headers
@@ -75,9 +79,17 @@ class AIOSomeComfort(object):
         if (
             ".ASPXAUTH_TRUEHOME" in resp2.cookies
             and resp2.cookies[".ASPXAUTH_TRUEHOME"].value == ""
-        ):
-            _LOG.error(f"Login as {self._username} failed - null cookie")
-            raise AuthError(f"Login as {self._username} failed - null cookie")
+        ) or resp.status == 401:
+            _LOG.error(
+                f"Login as {self._username} failed - null cookie or Unauthorized {resp2.status}"
+            )
+            raise AuthError(
+                f"Login as {self._username} failed - null cookie or Unauthorized {resp2.status}"
+            )
+
+        elif resp.status != 200:
+            _LOG.error("Connection error %s", resp.status)
+            raise ConnectionError(f"Connection error {resp.status}")
 
     @staticmethod
     async def _resp_json(resp, req):
