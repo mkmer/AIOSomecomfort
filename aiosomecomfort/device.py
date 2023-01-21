@@ -86,7 +86,7 @@ class Device(object):
             return FAN_MODES[self._data["fanData"]["fanMode"]]
         except (KeyError, TypeError, IndexError):
             if self._data["hasFan"]:
-                raise APIError('Unknown fan mode %s',self._data["fanData"]["fanMode"])
+                raise APIError("Unknown fan mode %s" % self._data["fanData"]["fanMode"])
             else:
                 return None
 
@@ -94,11 +94,11 @@ class Device(object):
         try:
             mode_index = FAN_MODES.index(mode)
         except ValueError:
-            raise SomeComfortError("Invalid fan mode '%s'", mode)
+            raise SomeComfortError("Invalid fan mode %s" % mode)
 
         key = "fanMode%sAllowed" % mode.title()
         if not self._data["fanData"][key]:
-            raise SomeComfortError("Device does not support %s", mode")
+            raise SomeComfortError("Device does not support %s" % mode)
         await self._client._set_thermostat_settings(
             self.deviceid, {"FanMode": mode_index}
         )
@@ -111,23 +111,24 @@ class Device(object):
             return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
         except KeyError:
             raise APIError(
-                "Unknown system mode {(self._data['uiData']['SystemSwitchPosition']}"
+                "Unknown system mode %s"
+                % (self._data["uiData"]["SystemSwitchPosition"])
             )
 
     async def set_system_mode(self, mode):
         try:
             mode_index = SYSTEM_MODES.index(mode)
         except ValueError:
-            raise SomeComfortError("Invalid system mode `%s`", mode)
+            raise SomeComfortError("Invalid system mode ", mode)
         if mode == "emheat":
             key = "SwitchEmergencyHeatAllowed"
         else:
             key = f"Switch{mode.title()}Allowed"
         try:
             if not self._data["uiData"][key]:
-                raise SomeComfortError("Device does not support %s,",mode)
+                raise SomeComfortError("Device does not support %s " % mode)
         except KeyError:
-            raise APIError(f"Unknown Key: {key}")
+            raise APIError("Unknown Key: %s" % key)
         await self._client._set_thermostat_settings(
             self.deviceid, {"SystemSwitch": mode_index}
         )

@@ -17,7 +17,7 @@ def _convert_errors(fn):
 
         except aiohttp.ClientError:
             _LOG.error("Connection Timeout")
-            raise ConnectionError
+            raise ConnectionError("Connection Timeout")
 
     return wrapper
 
@@ -65,10 +65,10 @@ class AIOSomeComfort(object):
             # I'll leave it here in case they start doing the
             # right thing.
             _LOG.error("Login as %s failed", self._username)
-            raise AuthError("Login as %s failed", self._username)
+            raise AuthError("Login as %s failed" % self._username)
         elif resp.status != 200:
             _LOG.error("Connection error %s", resp.status)
-            raise ConnectionError("Connection error %s", resp.status)
+            raise ConnectionError("Connection error %s" % resp.status)
 
         self._headers.pop("Content-Type")
         resp2 = await self._session.get(
@@ -92,8 +92,8 @@ class AIOSomeComfort(object):
             )
 
         elif resp2.status != 200:
-            _LOG.error("Connection error %s", resp.status)
-            raise ConnectionError("Connection error %s", resp2.status)
+            _LOG.error("Connection error %s", resp2.status)
+            raise ConnectionError("Connection error %s" % resp2.status)
 
     @staticmethod
     async def _resp_json(resp, req):
@@ -129,8 +129,8 @@ class AIOSomeComfort(object):
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
         else:
-            _LOG.error("API returned %s from %s request",resp.status,req)
-            raise SomeComfortError("API returned %s from %s request",resp.status,req)
+            _LOG.error("API returned %s from %s request", resp.status, req)
+            raise SomeComfortError("API returned %s, %s" % resp.status, req)
 
     def _get_json(self, *args, **kwargs):
         return self._request_json("get", *args, **kwargs)
@@ -190,8 +190,8 @@ class AIOSomeComfort(object):
             _LOG.error("Connection Timed out.")
             raise ConnectionTimeout("Connection Timed out.")
         except Exception as exp:
-            _LOG.exception("Unexpected Connection Error. %s",exp)
-            raise SomeComfortError("Unexpected Connection Error. %s",exp)
+            _LOG.exception("Unexpected Connection Error. %s", exp)
+            raise SomeComfortError("Unexpected Connection Error. %s" % exp)
         else:
             if resp.status == 401:
                 _LOG.error("API Rate Limited at keep alive.")
@@ -200,9 +200,9 @@ class AIOSomeComfort(object):
                 _LOG.error("Service Unavailable at keep alive.")
                 raise ServiceUnavailable("Service Unavailable at keep alive.")
             elif resp.status != 200:
-                _LOG.error("Session Error occurred: Received %s,"resp.status)
+                _LOG.error("Session Error occurred: Received %s", resp.status)
                 raise SomeComfortError(
-                    "Session Error occurred: Received %s,"resp.status
+                    "Session Error occurred: Received %s" % resp.status
                 )
 
     @_convert_errors
