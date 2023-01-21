@@ -33,7 +33,6 @@ class AIOSomeComfort(object):
             "Accept": "*/*",
             "Connection": "keep-alive",
             "Accept-Encoding": "gzip, deflate",
-            "Content-Type": "application/x-www-form-urlencoded",
         }
         self._locations = {}
         self._baseurl = "https://www.mytotalconnectcomfort.com"
@@ -48,6 +47,7 @@ class AIOSomeComfort(object):
             "Password": self._password,
             "RememberMe": "false",
         }
+        self._headers["Content-Type"] = "application/x-www-form-urlencoded"
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
         resp = await self._session.post(
