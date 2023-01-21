@@ -64,11 +64,11 @@ class AIOSomeComfort(object):
             # This never seems to happen currently, but
             # I'll leave it here in case they start doing the
             # right thing.
-            _LOG.error(f"Login as {self._username} failed")
-            raise AuthError(f"Login as {self._username} failed")
+            _LOG.error("Login as %s failed", self._username)
+            raise AuthError("Login as %s failed", self._username)
         elif resp.status != 200:
             _LOG.error("Connection error %s", resp.status)
-            raise (f"Connection error {resp.status}")
+            raise ConnectionError("Connection error %s", resp.status)
 
         self._headers.pop("Content-Type")
         resp2 = await self._session.get(
@@ -79,17 +79,21 @@ class AIOSomeComfort(object):
         if (
             ".ASPXAUTH_TRUEHOME" in resp2.cookies
             and resp2.cookies[".ASPXAUTH_TRUEHOME"].value == ""
-        ) or resp.status == 401:
+        ) or resp2.status == 401:
             _LOG.error(
-                f"Login as {self._username} failed - null cookie or Unauthorized {resp2.status}"
+                "Login as %s failed - null cookie or Unauthorized %s",
+                self._username,
+                resp2.status,
             )
             raise AuthError(
-                f"Login as {self._username} failed - null cookie or Unauthorized {resp2.status}"
+                "Login as %s failed - null cookie or Unauthorized %s",
+                self._username,
+                resp2.status,
             )
 
-        elif resp.status != 200:
+        elif resp2.status != 200:
             _LOG.error("Connection error %s", resp.status)
-            raise ConnectionError(f"Connection error {resp.status}")
+            raise ConnectionError("Connection error %s", resp2.status)
 
     @staticmethod
     async def _resp_json(resp, req):
@@ -98,7 +102,7 @@ class AIOSomeComfort(object):
         except:
             # Any error doing this is probably because we didn't
             # get JSON back (the API is terrible about this).
-            _LOG.exception(f"Failed to de-JSON {req} {resp}")
+            _LOG.exception("Failed to de-JSON %s %s", req, resp)
 
     async def _request_json(self, method, *args, **kwargs):
         if "timeout" not in kwargs:
@@ -125,8 +129,8 @@ class AIOSomeComfort(object):
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
         else:
-            _LOG.error(f"API returned {resp.status} from {req} request")
-            raise SomeComfortError(f"API returned {resp.status} from {req} request")
+            _LOG.error("API returned %s from %s request",resp.status,req)
+            raise SomeComfortError("API returned %s from %s request",resp.status,req)
 
     def _get_json(self, *args, **kwargs):
         return self._request_json("get", *args, **kwargs)
@@ -186,8 +190,8 @@ class AIOSomeComfort(object):
             _LOG.error("Connection Timed out.")
             raise ConnectionTimeout("Connection Timed out.")
         except Exception as exp:
-            _LOG.exception(f"Unexpected Connection Error. {exp}")
-            raise SomeComfortError(f"Unexpected Connection Error. {exp}")
+            _LOG.exception("Unexpected Connection Error. %s",exp)
+            raise SomeComfortError("Unexpected Connection Error. %s",exp)
         else:
             if resp.status == 401:
                 _LOG.error("API Rate Limited at keep alive.")
@@ -196,9 +200,9 @@ class AIOSomeComfort(object):
                 _LOG.error("Service Unavailable at keep alive.")
                 raise ServiceUnavailable("Service Unavailable at keep alive.")
             elif resp.status != 200:
-                _LOG.error(f"Session Error occurred: Received {resp.status}")
+                _LOG.error("Session Error occurred: Received %s,"resp.status)
                 raise SomeComfortError(
-                    f"Session Error occurred: Received {resp.status}"
+                    "Session Error occurred: Received %s,"resp.status
                 )
 
     @_convert_errors
