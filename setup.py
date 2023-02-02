@@ -17,7 +17,7 @@ setup(
     author_email="m_kasper@sbcglobal.net",
     url="https://github.com/mkmer/AIOSomecomfort",
     download_url="https://github.com/mkmer/AIOSomecomfort/archive/refs/tags/0.0.3.tar.gz",
-    packages=["AIOSomecomfort"],
+    packages=["aiosomecomfort"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
