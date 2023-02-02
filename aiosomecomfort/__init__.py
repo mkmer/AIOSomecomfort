@@ -9,6 +9,8 @@ from .exceptions import *
 
 _LOG = logging.getLogger("somecomfort")
 
+AUTH_COOKIE = ".ASPXAUTH_TRUEHOME"
+
 
 def _convert_errors(fn):
     def wrapper(*args, **kwargs):
@@ -36,7 +38,6 @@ class AIOSomeComfort(object):
         }
         self._locations = {}
         self._baseurl = "https://www.mytotalconnectcomfort.com"
-        self._default_url = self._baseurl
 
     @_convert_errors
     async def login(self):
@@ -56,8 +57,8 @@ class AIOSomeComfort(object):
 
         # The TUREHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
         cookies = resp.cookies
-        if ".ASPXAUTH_TRUEHOME" in cookies:
-            cookies[".ASPXAUTH_TRUEHOME"]["expires"] = ""
+        if AUTH_COOKIE in cookies:
+            cookies[AUTH_COOKIE]["expires"] = ""
             self._session.cookie_jar.update_cookies(cookies=cookies)
 
         if resp.status == 401:
@@ -77,8 +78,7 @@ class AIOSomeComfort(object):
 
         # if we get null cookies for this, the login has failed.
         if (
-            ".ASPXAUTH_TRUEHOME" in resp2.cookies
-            and resp2.cookies[".ASPXAUTH_TRUEHOME"].value == ""
+            AUTH_COOKIE in resp2.cookies and resp2.cookies[AUTH_COOKIE].value == ""
         ) or resp2.status == 401:
             _LOG.error(
                 "Login as %s failed - null cookie or Unauthorized %s",
@@ -95,15 +95,6 @@ class AIOSomeComfort(object):
             _LOG.error("Connection error %s", resp2.status)
             raise ConnectionError("Connection error %s" % resp2.status)
 
-    @staticmethod
-    async def _resp_json(resp, req):
-        try:
-            return await resp.json()
-        except:
-            # Any error doing this is probably because we didn't
-            # get JSON back (the API is terrible about this).
-            _LOG.exception("Failed to de-JSON %s %s", req, resp)
-
     async def _request_json(self, method, *args, **kwargs):
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
@@ -115,14 +106,15 @@ class AIOSomeComfort(object):
         # Check again for the deformed cookie
         # API sends a null cookie if really want it to expire
         cookies = resp.cookies
-        if ".ASPXAUTH_TRUEHOME" in cookies:
-            cookies[".ASPXAUTH_TRUEHOME"]["expires"] = ""
+        if AUTH_COOKIE in cookies:
+            cookies[AUTH_COOKIE]["expires"] = ""
             self._session.cookie_jar.update_cookies(cookies=cookies)
 
         req = args[0].replace(self._baseurl, "")
 
         if resp.status == 200 and resp.content_type == "application/json":
-            return await self._resp_json(resp, req)
+            return await resp.json()
+
         elif resp.status == 401:
             _LOG.error("API Rate Limited at login.")
             raise APIRateLimited("API Rate Limited at login.")
@@ -130,7 +122,8 @@ class AIOSomeComfort(object):
         elif resp.status == 503:
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
-        else:
+
+        else:  # Some other non 200 status
             _LOG.error("API returned %s from %s request", resp.status, req)
             raise SomeComfortError("API returned %s, %s" % resp.status, req)
 
