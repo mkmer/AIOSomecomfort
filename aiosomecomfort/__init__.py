@@ -169,7 +169,7 @@ class AIOSomeComfort(object):
         data.update(settings)
         url = f"{self._baseurl}/portal/Device/SubmitControlScreenChanges"
         result = await self._post_json(url, data=data)
-        if result.get("success") != 1:
+        if result is None or result.get("success") != 1:
             raise APIError("API rejected thermostat settings")
 
     async def keepalive(self):
