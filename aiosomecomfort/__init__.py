@@ -108,7 +108,9 @@ class AIOSomeComfort(object):
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
         kwargs["headers"] = self._headers
-        resp = await getattr(self._session, method)(*args, **kwargs)
+        resp: aiohttp.ClientResponse = await getattr(self._session, method)(
+            *args, **kwargs
+        )
 
         # Check again for the deformed cookie
         # API sends a null cookie if really want it to expire
@@ -119,7 +121,7 @@ class AIOSomeComfort(object):
 
         req = args[0].replace(self._baseurl, "")
 
-        if resp.status == 200:
+        if resp.status == 200 and resp.content_type == "application/json":
             return await self._resp_json(resp, req)
         elif resp.status == 401:
             _LOG.error("API Rate Limited at login.")
