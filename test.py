@@ -157,7 +157,7 @@ async def _main(session):
     )
 
     parser.add_argument(
-        "--username", help="username")
+        "--username", help="username"
     )
     parser.add_argument("--password", help="password")
     parser.add_argument("--device", help="device", type=int)
