@@ -131,7 +131,7 @@ class AIOSomeComfort(object):
 
         else:  # Some other non 200 status
             _LOG.error("API returned %s from %s request", resp.status, req)
-            raise SomeComfortError("API returned %s, %s" % resp.status, req)
+            raise SomeComfortError("API returned %s, %s" % (resp.status, req))
 
     def _get_json(self, *args, **kwargs):
         return self._request_json("get", *args, **kwargs)
