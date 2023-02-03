@@ -1,4 +1,4 @@
-import __future__
+from __future__ import annotations
 import aiohttp
 import logging
 from yarl import URL
@@ -25,10 +25,16 @@ def _convert_errors(fn):
 
 
 class AIOSomeComfort(object):
-    def __init__(self, username, password, timeout=30, session=None):
-        self._username: str | None = username  # = username
-        self._password: str | None = password  # password
-        self._session: aiohttp.ClientSession = session
+    def __init__(
+        self,
+        username: str | None,
+        password: str | None,
+        timeout=30,
+        session: aiohttp.ClientSession = None,
+    ) -> None:
+        self._username = username  # = username
+        self._password = password  # password
+        self._session = session
         self._timeout = timeout
         self._headers = {
             "X-Requested-With": "XMLHttpRequest",
@@ -40,7 +46,7 @@ class AIOSomeComfort(object):
         self._baseurl = "https://www.mytotalconnectcomfort.com"
 
     @_convert_errors
-    async def login(self):
+    async def login(self) -> None:
         url = f"{self._baseurl}/portal"
         params = {
             "timeOffset": "480",
@@ -95,7 +101,7 @@ class AIOSomeComfort(object):
             _LOG.error("Connection error %s", resp2.status)
             raise ConnectionError("Connection error %s" % resp2.status)
 
-    async def _request_json(self, method, *args, **kwargs):
+    async def _request_json(self, method: str, *args, **kwargs):
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
         kwargs["headers"] = self._headers
@@ -133,7 +139,7 @@ class AIOSomeComfort(object):
     async def _post_json(self, *args, **kwargs):
         return await self._request_json("post", *args, **kwargs)
 
-    async def _get_locations(self):
+    async def _get_locations(self) -> list:
         json_responses: list = []
         url = f"{self._baseurl}/portal/Location/GetLocationListData/"
         for page in {1, 2, 3, 4}:
@@ -142,16 +148,21 @@ class AIOSomeComfort(object):
             if resp.content_type == "application/json":
                 response = await resp.json()
                 json_responses.extend(response)
-
+            cookies = resp.cookies
+            if AUTH_COOKIE in cookies:
+                cookies[AUTH_COOKIE]["expires"] = ""
+                self._session.cookie_jar.update_cookies(cookies=cookies)
         if len(json_responses) > 0:
             return json_responses
         return None
 
-    async def _get_thermostat_data(self, thermostat_id):
+    async def _get_thermostat_data(self, thermostat_id: str):
         url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}"
         return await self._get_json(url)
 
-    async def _set_thermostat_settings(self, thermostat_id, settings):
+    async def _set_thermostat_settings(
+        self, thermostat_id: str, settings: dict[str, str]
+    ) -> None:
         data = {
             "SystemSwitch": None,
             "HeatSetpoint": None,
@@ -162,46 +173,15 @@ class AIOSomeComfort(object):
             "DeviceID": thermostat_id,
         }
         data.update(settings)
+        _LOG.debug("Sending Data: %s", data)
         url = f"{self._baseurl}/portal/Device/SubmitControlScreenChanges"
         result = await self._post_json(url, data=data)
+        _LOG.debug("Received setting response %s", result)
         if result is None or result.get("success") != 1:
             raise APIError("API rejected thermostat settings")
 
-    async def keepalive(self):
-        """Makes a keepalive request to avoid session timeout.
-
-        Raises SessionTimedOut if the session has timed out.
-        """
-        url = URL(f"{self._baseurl}/portal", encoded=True)
-
-        try:
-            resp = await self._session.get(
-                url, timeout=self._timeout, headers=self._headers
-            )
-        except aiohttp.ClientConnectionError:
-            _LOG.error("Connection Error occurred.")
-            raise ConnectionError()
-        except aiohttp.ClientError:
-            _LOG.error("Connection Timed out.")
-            raise ConnectionTimeout("Connection Timed out.")
-        except Exception as exp:
-            _LOG.exception("Unexpected Connection Error. %s", exp)
-            raise SomeComfortError("Unexpected Connection Error. %s" % exp)
-        else:
-            if resp.status == 401:
-                _LOG.error("API Rate Limited at keep alive.")
-                raise APIRateLimited("API Rate Limited at keep alive.")
-            elif resp.status == 503:
-                _LOG.error("Service Unavailable at keep alive.")
-                raise ServiceUnavailable("Service Unavailable at keep alive.")
-            elif resp.status != 200:
-                _LOG.error("Session Error occurred: Received %s", resp.status)
-                raise SomeComfortError(
-                    "Session Error occurred: Received %s" % resp.status
-                )
-
     @_convert_errors
-    async def discover(self):
+    async def discover(self) -> None:
         raw_locations = await self._get_locations()
         if raw_locations is not None:
             for raw_location in raw_locations:
@@ -215,12 +195,12 @@ class AIOSomeComfort(object):
                 self._locations[location.locationid] = location
 
     @property
-    def locations_by_id(self):
+    def locations_by_id(self) -> dict:
         """A dict of all locations indexed by id"""
         return self._locations
 
     @property
-    def default_device(self):
+    def default_device(self) -> str | None:
         """This is the first device found.
 
         It is only useful if the account has only one device and location
@@ -232,7 +212,7 @@ class AIOSomeComfort(object):
                 return device
         return None
 
-    def get_device(self, device_id):
+    def get_device(self, device_id: str) -> str | None:
         """Find a device by id.
 
         :returns: None if not found.
