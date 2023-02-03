@@ -77,7 +77,7 @@ class AIOSomeComfort(object):
             _LOG.error("Connection error %s", resp.status)
             raise ConnectionError("Connection error %s" % resp.status)
 
-        self._headers.pop("Content-Type")
+        self._headers["Content-Type"] = "application/json"
         resp2 = await self._session.get(
             f"{self._baseurl}/portal", timeout=self._timeout, headers=self._headers
         )  # this should redirect if we're logged in
