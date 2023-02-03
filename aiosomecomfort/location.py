@@ -19,12 +19,12 @@ class Location(object):
         return self
 
     @property
-    def devices_by_id(self):
+    def devices_by_id(self) -> dict:
         """A dict of devices indexed by DeviceID"""
         return self._devices
 
     @property
-    def devices_by_name(self):
+    def devices_by_name(self) -> dict:
         """A dict of devices indexed by name.
 
         Note that if you have multiple devices with the same name,
@@ -33,9 +33,9 @@ class Location(object):
         return {dev.name: dev for dev in self._devices}
 
     @property
-    def locationid(self):
+    def locationid(self) -> str:
         """The location identifier"""
         return self._locationid
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Location<{self.locationid}>"
