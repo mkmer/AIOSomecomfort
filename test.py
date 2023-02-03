@@ -68,13 +68,13 @@ def persistent_session():
         pass
 
 
-def do_holds(client, args, device):
+async def do_holds(client, args, device):
     if args.cancel_hold:
-        device.hold_heat = False
-        device.hold_cool = False
+        await device.set_hold_heat(False)
+        await device.set_hold_cool(False)
     elif args.permanent_hold:
-        device.hold_heat = True
-        device.hold_cool = True
+        await device.set_hold_heat(True)
+        await device.set_hold_cool(True)
     elif args.hold_until:
         try:
             holdtime = datetime.datetime.strptime(args.hold_until, "%H:%M")
@@ -82,8 +82,8 @@ def do_holds(client, args, device):
             print("Invalid time (use HH:MM)")
             return False
         try:
-            device.hold_heat = holdtime.time()
-            device.hold_cool = holdtime.time()
+            await device.hold_heat(holdtime.time())
+            await device.hold_cool(holdtime.time())
         except client.SomeComfortError as ex:
             print("Failed to set hold: %s" % str(ex))
             return False
@@ -156,9 +156,7 @@ async def _main(session):
         help="Get the current hold mode",
     )
 
-    parser.add_argument(
-        "--username", help="username"
-    )
+    parser.add_argument("--username", help="username")
     parser.add_argument("--password", help="password")
     parser.add_argument("--device", help="device", type=int)
     parser.add_argument(
@@ -218,7 +216,7 @@ async def _main(session):
         return 1
 
     if any([args.hold_until, args.cancel_hold, args.permanent_hold, args.get_hold]):
-        cont = do_holds(client, args, device)
+        cont = await do_holds(client, args, device)
         if not cont:
             return
 

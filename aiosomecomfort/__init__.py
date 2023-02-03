@@ -170,6 +170,8 @@ class AIOSomeComfort(object):
             "HeatNextPeriod": None,
             "CoolNextPeriod": None,
             "StatusHeat": None,
+            "StatusCool": None,
+            "FanMode": None,
             "DeviceID": thermostat_id,
         }
         data.update(settings)

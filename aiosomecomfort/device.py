@@ -183,7 +183,8 @@ class Device(object):
         else:
             return _hold_deadline(period)
 
-    async def _set_hold(self, which, hold):
+    async def _set_hold(self, which, hold, temperature=None):
+        settings = {}
         if hold is True:
             settings = {
                 "Status%s" % which: HOLD_TYPES.index("permanent"),
@@ -202,7 +203,8 @@ class Device(object):
             }
         else:
             raise SomeComfortError("Hold should be True, False, or datetime.time")
-
+        if temperature:
+            settings.update({f"{which}Setpoint": temperature})
         await self._client._set_thermostat_settings(self.deviceid, settings)
         self._data["uiData"].update(settings)
 
@@ -210,15 +212,15 @@ class Device(object):
     def hold_heat(self):
         return self._get_hold("Heat")
 
-    async def set_hold_heat(self, value):
-        await self._set_hold("Heat", value)
+    async def set_hold_heat(self, value, temperature=None):
+        await self._set_hold("Heat", value, temperature)
 
     @property
     def hold_cool(self):
         return self._get_hold("Cool")
 
-    async def set_hold_cool(self, value):
-        await self._set_hold("Cool", value)
+    async def set_hold_cool(self, value, temperature=None):
+        await self._set_hold("Cool", value, temperature)
 
     @property
     def current_temperature(self):
