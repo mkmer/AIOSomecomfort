@@ -228,7 +228,7 @@ async def _main(session):
             number_things + string_things,
             number_things + string_things + readonly_things,
         )
-    except client.SomeComfortError as ex:
+    except aiosomecomfort.SomeComfortError as ex:
         print("%s: %s" % (ex.__class__.__name__, str(ex)))
 
     if args.loop:

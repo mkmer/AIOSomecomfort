@@ -109,26 +109,26 @@ class Device(object):
         """Returns one of SYSTEM_MODES indicating the current setting"""
         try:
             return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
-        except KeyError:
+        except KeyError as exc:
             raise APIError(
                 "Unknown system mode %s"
                 % (self._data["uiData"]["SystemSwitchPosition"])
-            )
+            ) from exc
 
     async def set_system_mode(self, mode):
         try:
             mode_index = SYSTEM_MODES.index(mode)
-        except ValueError:
-            raise SomeComfortError("Invalid system mode ", mode)
+        except ValueError as exc:
+            raise SomeComfortError(f"Invalid system mode {mode}") from exc
         if mode == "emheat":
             key = "SwitchEmergencyHeatAllowed"
         else:
             key = f"Switch{mode.title()}Allowed"
         try:
             if not self._data["uiData"][key]:
-                raise SomeComfortError("Device does not support %s " % mode)
-        except KeyError:
-            raise APIError("Unknown Key: %s" % key)
+                raise SomeComfortError(f"Device does not support {mode}")
+        except KeyError as exc:
+            raise APIError(f"Unknown Key: {key}") from exc
         await self._client._set_thermostat_settings(
             self.deviceid, {"SystemSwitch": mode_index}
         )
@@ -143,7 +143,7 @@ class Device(object):
         lower = self._data["uiData"]["CoolLowerSetptLimit"]
         upper = self._data["uiData"]["CoolUpperSetptLimit"]
         if temp > upper or temp < lower:
-            raise SomeComfortError("Setpoint outside range %.1f-%.1f" % (lower, upper))
+            raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
         await self._client._set_thermostat_settings(
             self.deviceid, {"CoolSetpoint": temp}
         )
@@ -162,7 +162,7 @@ class Device(object):
             temp = self._data["uiData"]["HeatSetpoint"]
             _LOG.error("Didn't receive the temp to set. Setting to current temp.")
         if temp > upper or temp < lower:
-            raise SomeComfortError("Setpoint outside range %.1f-%.1f" % (lower, upper))
+            raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
         await self._client._set_thermostat_settings(
             self.deviceid, {"HeatSetpoint": temp}
         )
@@ -171,14 +171,13 @@ class Device(object):
     def _get_hold(self, which):
         try:
             hold = HOLD_TYPES[self._data["uiData"][f"Status{which}"]]
-        except KeyError:
-            raise APIError(
-                "Unknown hold mode %i" % (self._data["uiData"][f"Status{which}"])
-            )
+        except KeyError as exc:
+            mode = self._data["uiData"][f"Status{which}"]
+            raise APIError(f"Unknown hold mode {mode}") from exc
         period = self._data["uiData"][f"{which}NextPeriod"]
         if hold == "schedule":
             return False
-        elif hold == "permanent":
+        if hold == "permanent":
             return True
         else:
             return _hold_deadline(period)

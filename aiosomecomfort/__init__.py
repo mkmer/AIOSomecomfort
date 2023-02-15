@@ -92,9 +92,7 @@ class AIOSomeComfort(object):
                 resp2.status,
             )
             raise AuthError(
-                "Login as %s failed - null cookie or Unauthorized %s",
-                self._username,
-                resp2.status,
+                f"Login as {self._username} failed - null cookie or Unauthorized {resp2.status}"
             )
 
         elif resp2.status != 200:
@@ -117,7 +115,7 @@ class AIOSomeComfort(object):
             self._session.cookie_jar.update_cookies(cookies=cookies)
 
         req = args[0].replace(self._baseurl, "")
-
+        _LOG.debug(f"request json response {resp} with payload {await resp.text()}")
         if resp.status == 200 and resp.content_type == "application/json":
             return await resp.json()
 
@@ -179,6 +177,7 @@ class AIOSomeComfort(object):
         url = f"{self._baseurl}/portal/Device/SubmitControlScreenChanges"
         result = await self._post_json(url, data=data)
         _LOG.debug("Received setting response %s", result)
+        _LOG.debug("Received Payload %s", await result.text())
         if result is None or result.get("success") != 1:
             raise APIError("API rejected thermostat settings")
 
