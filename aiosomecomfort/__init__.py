@@ -115,7 +115,7 @@ class AIOSomeComfort(object):
             self._session.cookie_jar.update_cookies(cookies=cookies)
 
         req = args[0].replace(self._baseurl, "")
-        _LOG.debug(f"request json response {resp} with payload {await resp.text()}")
+
         if resp.status == 200 and resp.content_type == "application/json":
             return await resp.json()
 
@@ -129,6 +129,9 @@ class AIOSomeComfort(object):
 
         else:  # Some other non 200 status
             _LOG.error("API returned %s from %s request", resp.status, req)
+            _LOG.debug(
+                "request json response %s with payload %s", resp, await resp.text()
+            )
             raise SomeComfortError("API returned %s, %s" % (resp.status, req))
 
     def _get_json(self, *args, **kwargs):
@@ -162,6 +165,7 @@ class AIOSomeComfort(object):
         self, thermostat_id: str, settings: dict[str, str]
     ) -> None:
         data = {
+            "DeviceID": thermostat_id,
             "SystemSwitch": None,
             "HeatSetpoint": None,
             "CoolSetpoint": None,
@@ -170,14 +174,13 @@ class AIOSomeComfort(object):
             "StatusHeat": None,
             "StatusCool": None,
             "FanMode": None,
-            "DeviceID": thermostat_id,
         }
+
         data.update(settings)
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._baseurl}/portal/Device/SubmitControlScreenChanges"
-        result = await self._post_json(url, data=data)
+        result = await self._post_json(url, json=data)
         _LOG.debug("Received setting response %s", result)
-        _LOG.debug("Received Payload %s", await result.text())
         if result is None or result.get("success") != 1:
             raise APIError("API rejected thermostat settings")
 
