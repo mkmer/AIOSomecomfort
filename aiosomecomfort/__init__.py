@@ -10,6 +10,7 @@ from .exceptions import *
 _LOG = logging.getLogger("somecomfort")
 
 AUTH_COOKIE = ".ASPXAUTH_TRUEHOME"
+DOMAIN = "www.mytotalconnectcomfort.com"
 
 
 def _convert_errors(fn):
@@ -17,9 +18,9 @@ def _convert_errors(fn):
         try:
             return fn(*args, **kwargs)
 
-        except aiohttp.ClientError:
+        except aiohttp.ClientError as ex:
             _LOG.error("Connection Timeout")
-            raise ConnectionError("Connection Timeout")
+            raise ConnectionError("Connection Timeout") from ex
 
     return wrapper
 
@@ -43,7 +44,7 @@ class AIOSomeComfort(object):
             "Accept-Encoding": "gzip, deflate",
         }
         self._locations = {}
-        self._baseurl = "https://www.mytotalconnectcomfort.com"
+        self._baseurl = f"https://{DOMAIN}"
 
     @_convert_errors
     async def login(self) -> None:
@@ -57,7 +58,7 @@ class AIOSomeComfort(object):
         self._headers["Content-Type"] = "application/x-www-form-urlencoded"
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
-        self._session.cookie_jar.clear_domain(url)
+        self._session.cookie_jar.clear_domain(DOMAIN)
         resp = await self._session.post(
             url, timeout=self._timeout, headers=self._headers
         )
