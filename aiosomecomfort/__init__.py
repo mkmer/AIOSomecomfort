@@ -57,6 +57,7 @@ class AIOSomeComfort(object):
         self._headers["Content-Type"] = "application/x-www-form-urlencoded"
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
+        self._session.cookie_jar.clear_domain(url)
         resp = await self._session.post(
             url, timeout=self._timeout, headers=self._headers
         )
@@ -92,7 +93,8 @@ class AIOSomeComfort(object):
                 resp2.status,
             )
             raise AuthError(
-                f"Login as {self._username} failed - null cookie or Unauthorized {resp2.status}"
+                "Login as %s failed - null cookie or Unauthorized %s"
+                % (self._username, resp2.status)
             )
 
         elif resp2.status != 200:
@@ -120,8 +122,8 @@ class AIOSomeComfort(object):
             return await resp.json()
 
         elif resp.status == 401:
-            _LOG.error("API Rate Limited at login.")
-            raise APIRateLimited("API Rate Limited at login.")
+            _LOG.error("401 Error at update (Key expired?).")
+            raise APIRateLimited("401 Error at update (Key Expired?).")
 
         elif resp.status == 503:
             _LOG.error("Service Unavailable.")

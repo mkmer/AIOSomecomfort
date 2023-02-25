@@ -229,7 +229,11 @@ class Device(object):
     @property
     def current_humidity(self):
         """The current measured ambient humidity"""
-        return self._data["uiData"]["IndoorHumidity"]
+        return (
+            self._data["uiData"].get("IndoorHumidity")
+            if self._data["uiData"].get("IndoorHumidity") <= 100
+            else None
+        )
 
     @property
     def equipment_output_status(self):
