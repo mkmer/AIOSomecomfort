@@ -75,6 +75,7 @@ class AIOSomeComfort(object):
             # right thing.
             _LOG.error("Login as %s failed", self._username)
             raise AuthError("Login as %s failed" % self._username)
+
         elif resp.status != 200:
             _LOG.error("Connection error %s", resp.status)
             raise ConnectionError("Connection error %s" % resp.status)
@@ -85,20 +86,21 @@ class AIOSomeComfort(object):
         )  # this should redirect if we're logged in
 
         # if we get null cookies for this, the login has failed.
-        if (
-            AUTH_COOKIE in resp2.cookies and resp2.cookies[AUTH_COOKIE].value == ""
-        ) or resp2.status == 401:
+        if AUTH_COOKIE in resp2.cookies and resp2.cookies[AUTH_COOKIE].value == "":
+            _LOG.error("Login null cookie - site may be down")
+            raise ConnectionError("Null cookie connection error %s" % resp2.status)
+
+        if resp2.status == 401:
             _LOG.error(
-                "Login as %s failed - null cookie or Unauthorized %s",
+                "Login as %s failed - Unauthorized %s",
                 self._username,
                 resp2.status,
             )
             raise AuthError(
-                "Login as %s failed - null cookie or Unauthorized %s"
-                % (self._username, resp2.status)
+                "Login as %s failed - Unauthorized %s" % (self._username, resp2.status)
             )
 
-        elif resp2.status != 200:
+        if resp2.status != 200:
             _LOG.error("Connection error %s", resp2.status)
             raise ConnectionError("Connection error %s" % resp2.status)
 
