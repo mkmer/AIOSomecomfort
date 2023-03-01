@@ -104,7 +104,7 @@ class AIOSomeComfort(object):
             _LOG.error("Connection error %s", resp2.status)
             raise ConnectionError("Connection error %s" % resp2.status)
 
-    async def _request_json(self, method: str, *args, **kwargs):
+    async def _request_json(self, method: str, *args, **kwargs) -> str | None:
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
         kwargs["headers"] = self._headers
@@ -137,10 +137,10 @@ class AIOSomeComfort(object):
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
         raise SomeComfortError("API returned %s, %s" % (resp.status, req))
 
-    def _get_json(self, *args, **kwargs):
+    def _get_json(self, *args, **kwargs) -> str | None:
         return self._request_json("get", *args, **kwargs)
 
-    async def _post_json(self, *args, **kwargs):
+    async def _post_json(self, *args, **kwargs) -> str | None:
         return await self._request_json("post", *args, **kwargs)
 
     async def _get_locations(self) -> list:
@@ -159,13 +159,15 @@ class AIOSomeComfort(object):
             return json_responses
         return None
 
-    async def _get_thermostat_data(self, thermostat_id: str):
+    async def get_thermostat_data(self, thermostat_id: str) -> str:
+        """Get thermostat data from API"""
         url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}"
         return await self._get_json(url)
 
-    async def _set_thermostat_settings(
+    async def set_thermostat_settings(
         self, thermostat_id: str, settings: dict[str, str]
     ) -> None:
+        """Set thermostat settings from a dict."""
         data = {
             "DeviceID": thermostat_id,
             "SystemSwitch": None,
