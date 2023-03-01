@@ -124,20 +124,18 @@ class AIOSomeComfort(object):
         if resp.status == 200 and resp.content_type == "application/json":
             return await resp.json()
 
-        elif resp.status == 401:
+        if resp.status == 401:
             _LOG.error("401 Error at update (Key expired?).")
             raise APIRateLimited("401 Error at update (Key Expired?).")
 
-        elif resp.status == 503:
+        if resp.status == 503:
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
 
-        else:  # Some other non 200 status
-            _LOG.error("API returned %s from %s request", resp.status, req)
-            _LOG.debug(
-                "request json response %s with payload %s", resp, await resp.text()
-            )
-            raise SomeComfortError("API returned %s, %s" % (resp.status, req))
+        # Some other non 200 status
+        _LOG.error("API returned %s from %s request", resp.status, req)
+        _LOG.debug("request json response %s with payload %s", resp, await resp.text())
+        raise SomeComfortError("API returned %s, %s" % (resp.status, req))
 
     def _get_json(self, *args, **kwargs):
         return self._request_json("get", *args, **kwargs)
@@ -148,12 +146,11 @@ class AIOSomeComfort(object):
     async def _get_locations(self) -> list:
         json_responses: list = []
         url = f"{self._baseurl}/portal/Location/GetLocationListData/"
-        for page in {1, 2, 3, 4}:
+        for page in range(1, 5):  # pages 1 - 4
             params = {"page": page, "filter": ""}
             resp = await self._session.post(url, params=params, headers=self._headers)
             if resp.content_type == "application/json":
-                response = await resp.json()
-                json_responses.extend(response)
+                json_responses.extend(await resp.json())
             cookies = resp.cookies
             if AUTH_COOKIE in cookies:
                 cookies[AUTH_COOKIE]["expires"] = ""
@@ -191,6 +188,7 @@ class AIOSomeComfort(object):
 
     @_convert_errors
     async def discover(self) -> None:
+        """Discover devices on the account."""
         raw_locations = await self._get_locations()
         if raw_locations is not None:
             for raw_location in raw_locations:
@@ -198,7 +196,7 @@ class AIOSomeComfort(object):
                     location = await Location.from_api_response(self, raw_location)
                 except KeyError as ex:
                     _LOG.exception(
-                        ("Failed to process location `%s`: missing %s element")
+                        "Failed to process location `%s`: missing %s element"
                         % (raw_location.get("LocationID", "unknown"), ex.args[0])
                     )
                 self._locations[location.locationid] = location
