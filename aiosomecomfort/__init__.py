@@ -26,6 +26,8 @@ def _convert_errors(fn):
 
 
 class AIOSomeComfort(object):
+    """AIOSomeComfort API Class."""
+
     def __init__(
         self,
         username: str | None,
@@ -48,6 +50,7 @@ class AIOSomeComfort(object):
 
     @_convert_errors
     async def login(self) -> None:
+        """Login to Honeywell API."""
         url = f"{self._baseurl}/portal"
         params = {
             "timeOffset": "480",
