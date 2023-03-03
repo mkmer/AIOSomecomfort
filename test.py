@@ -15,16 +15,10 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-if False:
-    # Dump requests/responses
-    import http.client
-
-    http.client.HTTPConnection.debuglevel = 1
-
 
 async def get_or_set_things(client, args, device, settables, gettables):
     for thing in settables:
-        value = getattr(args, "set_%s" % thing)
+        value = await getattr(args, "set_%s" % thing)
         if value is not None:
             setattr(device, thing, value)
             return 0
