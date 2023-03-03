@@ -140,8 +140,8 @@ class AIOSomeComfort(object):
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
         raise SomeComfortError("API returned %s, %s" % (resp.status, req))
 
-    def _get_json(self, *args, **kwargs) -> str | None:
-        return self._request_json("get", *args, **kwargs)
+    async def _get_json(self, *args, **kwargs) -> str | None:
+        return await self._request_json("get", *args, **kwargs)
 
     async def _post_json(self, *args, **kwargs) -> str | None:
         return await self._request_json("post", *args, **kwargs)
