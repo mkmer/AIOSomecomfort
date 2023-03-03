@@ -22,7 +22,7 @@ if False:
     http.client.HTTPConnection.debuglevel = 1
 
 
-def get_or_set_things(client, args, device, settables, gettables):
+async def get_or_set_things(client, args, device, settables, gettables):
     for thing in settables:
         value = getattr(args, "set_%s" % thing)
         if value is not None:
@@ -30,7 +30,7 @@ def get_or_set_things(client, args, device, settables, gettables):
             return 0
 
     for thing in gettables:
-        isset = getattr(args, "get_%s" % thing)
+        isset = await getattr(args, "get_%s" % thing)
         if isset:
             print(getattr(device, thing))
             return 0
@@ -221,7 +221,7 @@ async def _main(session):
             return
 
     try:
-        get_or_set_things(
+        await get_or_set_things(
             client,
             args,
             device,
