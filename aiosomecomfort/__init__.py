@@ -1,8 +1,8 @@
 from __future__ import annotations
-import aiohttp
 import logging
-from yarl import URL
 import urllib.parse as urllib
+import aiohttp
+from yarl import URL
 from .location import Location
 from .exceptions import *
 
