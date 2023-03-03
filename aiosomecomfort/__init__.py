@@ -195,6 +195,7 @@ class AIOSomeComfort(object):
                 retry_count -= 1
             else:
                 _LOG.debug("Received setting response %s", result)
+                break
 
         if retry_count == 0:
             raise APIError("API rejected thermostat settings")
