@@ -186,9 +186,17 @@ class AIOSomeComfort(object):
         data.update(settings)
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._baseurl}/portal/Device/SubmitControlScreenChanges"
-        result = await self._post_json(url, json=data)
-        _LOG.debug("Received setting response %s", result)
-        if result is None or result.get("success") != 1:
+        retry_count = 3
+        while retry_count > 0:
+            result = await self._post_json(url, json=data)
+            if result.get("success") != 1:
+                await self.login()
+                await self.get_thermostat_data(thermostat_id)
+                retry_count -= 1
+            else:
+                _LOG.debug("Received setting response %s", result)
+
+        if retry_count == 0:
             raise APIError("API rejected thermostat settings")
 
     @_convert_errors
