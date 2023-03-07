@@ -197,19 +197,23 @@ class Device(object):
         settings = {}
         if hold is True:
             settings = {
-                "Status%s" % which: HOLD_TYPES.index("permanent"),
-                "%sNextPeriod" % which: 0,
+                "StatusCool": HOLD_TYPES.index("permanent"),
+                "StatusHeat": HOLD_TYPES.index("permanent"),
+                # "%sNextPeriod" % which: 0,
             }
         elif hold is False:
             settings = {
-                "Status%s" % which: HOLD_TYPES.index("schedule"),
-                "%sNextPeriod" % which: 0,
+                "StatusCool": HOLD_TYPES.index("schedule"),
+                "StatusHeat": HOLD_TYPES.index("schedule"),
+                # "%sNextPeriod" % which: 0,
             }
         elif isinstance(hold, datetime.time):
             qh = _hold_quarter_hours(hold)
             settings = {
-                "Status%s" % which: HOLD_TYPES.index("temporary"),
-                "%sNextPeriod" % which: qh,
+                "StatusCool": HOLD_TYPES.index("temporary"),
+                "CoolNextPeriod": qh,
+                "StatusHeat": HOLD_TYPES.index("temporary"),
+                "HeatNextPeriod": qh,
             }
         else:
             raise SomeComfortError("Hold should be True, False, or datetime.time")
