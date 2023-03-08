@@ -218,6 +218,10 @@ class Device(object):
         else:
             raise SomeComfortError("Hold should be True, False, or datetime.time")
         if temperature:
+            lower = self._data["uiData"][f"{which}LowerSetptLimit"]
+            upper = self._data["uiData"][f"{which}UpperSetptLimit"]
+            if temperature > upper or temperature < lower:
+                raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
             settings.update({f"{which}Setpoint": temperature})
         await self._client.set_thermostat_settings(self.deviceid, settings)
         self._data["uiData"].update(settings)
