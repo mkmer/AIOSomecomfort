@@ -254,7 +254,8 @@ class Device(object):
         """The current measured ambient humidity"""
         return (
             self._data["uiData"].get("IndoorHumidity")
-            if self._data["uiData"].get("IndoorHumidity") <= 100
+            if self._data["uiData"].get("IndoorHumiditySensorAvailable")
+            and self._data["uiData"].get("IndoorHumiditySensorNotFault")
             else None
         )
 
