@@ -91,7 +91,7 @@ class AIOSomeComfort(object):
         # if we get null cookies for this, the login has failed.
         if AUTH_COOKIE in resp2.cookies and resp2.cookies[AUTH_COOKIE].value == "":
             _LOG.error("Login null cookie - site may be down")
-            raise ConnectionError("Null cookie connection error %s" % resp2.status)
+            raise AuthError("Null cookie connection error %s" % resp2.status)
 
         if resp2.status == 401:
             _LOG.error(
