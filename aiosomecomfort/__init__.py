@@ -153,7 +153,7 @@ class AIOSomeComfort(object):
 
         if resp.status == 401:
             _LOG.error("401 Error at update (Key expired?).")
-            raise APIRateLimited("401 Error at update (Key Expired?).")
+            raise UnauthorizedError("401 Error at update (Key Expired?).")
 
         if resp.status == 503:
             _LOG.error("Service Unavailable.")
@@ -162,7 +162,7 @@ class AIOSomeComfort(object):
         # Some other non 200 status
         _LOG.error("API returned %s from %s request", resp.status, req)
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
-        raise SomeComfortError("API returned %s, %s" % (resp.status, req))
+        raise UnexpectedResponse("API returned %s, %s" % (resp.status, req))
 
     async def _get_json(self, *args, **kwargs) -> str | None:
         return await self._request_json("get", *args, **kwargs)
