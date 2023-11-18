@@ -7,3 +7,4 @@ AIOSomecomfort.egg-info/top_level.txt
 dist/
 __pycache__/
 test dont share.py
+test_dont_share_shortput.py
