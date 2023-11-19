@@ -41,9 +41,9 @@ class Device(object):
     async def from_location_response(cls, client, location, response) -> Device:
         """Extract device from location response."""
         self = cls(client, location)
-        self._deviceid = response["DeviceID"]
-        self._macid = response["MacID"]
-        self._name = response["Name"]
+        self._deviceid = response.get("DeviceID")
+        self._macid = response.get("MacID")
+        self._name = response.get("Name")
         await self.refresh()
         return self
 
@@ -51,11 +51,11 @@ class Device(object):
         """Refresh the Honeywell device data."""
         data = await self._client.get_thermostat_data(self.deviceid)
         if data is not None:
-            if not data["success"]:
+            if not data.get("success"):
                 _LOG.error("API reported failure to query device %s" % self.deviceid)
-            self._alive = data["deviceLive"]
-            self._commslost = data["communicationLost"]
-            self._data = data["latestData"]
+            self._alive = data.get("deviceLive")
+            self._commslost = data.get("communicationLost")
+            self._data = data.get("latestData")
             self._last_refresh = time.time()
 
     @property
@@ -81,21 +81,16 @@ class Device(object):
     @property
     def fan_running(self) -> bool:
         """Returns a boolean indicating the current state of the fan"""
-        if self._data["hasFan"]:
-            return self._data["fanData"]["fanIsRunning"]
-
+        if self._data.get("hasFan"):
+            return self._data.get("fanData", {}).get("fanIsRunning", False)
         return False
 
     @property
     def fan_mode(self) -> str | None:
         """Returns one of FAN_MODES indicating the current setting"""
-        try:
-            return FAN_MODES[self._data["fanData"]["fanMode"]]
-        except (KeyError, TypeError, IndexError):
-            if self._data["hasFan"]:
-                raise APIError("Unknown fan mode %s" % self._data["fanData"]["fanMode"])
-            else:
-                return None
+        if self._data.get("fanData", {}).get("fanMode") >= len(FAN_MODES):
+            return None
+        return FAN_MODES[self._data.get("fanData", {}).get("fanMode")]
 
     async def set_fan_mode(self, mode) -> None:
         """Set the fan mode async."""
@@ -105,7 +100,7 @@ class Device(object):
             raise SomeComfortError("Invalid fan mode %s" % mode) from ex
 
         key = f"fanMode{mode.title()}Allowed"
-        if not self._data["fanData"][key]:
+        if not self._data.get("fanData", {}).get(key):
             raise SomeComfortError("Device does not support %s" % mode)
         await self._client.set_thermostat_settings(
             self.deviceid, {"FanMode": mode_index}
@@ -115,13 +110,11 @@ class Device(object):
     @property
     def system_mode(self) -> str:
         """Returns one of SYSTEM_MODES indicating the current setting"""
-        try:
-            return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
-        except KeyError as exc:
-            raise APIError(
-                "Unknown system mode %s"
-                % (self._data["uiData"]["SystemSwitchPosition"])
-            ) from exc
+        if self._data.get("uiData", {}).get("SystemSwitchPosition") >= len(
+            SYSTEM_MODES
+        ):
+            return None
+        return SYSTEM_MODES[self._data.get("uiData", {}).get("SystemSwitchPosition")]
 
     async def set_system_mode(self, mode) -> None:
         """Async set the system mode."""
@@ -134,7 +127,7 @@ class Device(object):
         else:
             key = f"Switch{mode.title()}Allowed"
         try:
-            if not self._data["uiData"][key]:
+            if not self._data.get("uiData", {}).get(key):
                 raise SomeComfortError(f"Device does not support {mode}")
         except KeyError as exc:
             raise APIError(f"Unknown Key: {key}") from exc
@@ -146,46 +139,57 @@ class Device(object):
     @property
     def setpoint_cool(self) -> float:
         """The target temperature when in cooling mode"""
-        return self._data["uiData"]["CoolSetpoint"]
+        return self._data.get("uiData", {}).get("CoolSetpoint")
 
     async def set_setpoint_cool(self, temp) -> None:
         """Async set the target temperature when in cooling mode"""
-        lower = self._data["uiData"]["CoolLowerSetptLimit"]
-        upper = self._data["uiData"]["CoolUpperSetptLimit"]
+        lower = self._data.get("uiData", {}).get("CoolLowerSetptLimit")
+        upper = self._data.get("uiData", {}).get("CoolUpperSetptLimit")
+        deadband = self._data.get("uiData", {}).get("Deadband")
+        heatsp = self._data.get("uiData", {}).get("ScheduleHeatSp")
+
         if temp > upper or temp < lower:
             raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
+        data = {"CoolSetpoint": temp}
+        if deadband > 0 and (heatsp + deadband) >= temp:
+            data.update({"HeatSetpoint": temp-deadband})
         await self._client.set_thermostat_settings(
-            self.deviceid, {"CoolSetpoint": temp}
+            self.deviceid, data
         )
         self._data["uiData"]["CoolSetpoint"] = temp
 
     @property
     def setpoint_heat(self) -> float:
         """The target temperature when in heating mode"""
-        return self._data["uiData"]["HeatSetpoint"]
+        return self._data.get("uiData", {}).get("HeatSetpoint")
 
     async def set_setpoint_heat(self, temp) -> None:
         """Async set the target temperature when in heating mode"""
-        lower = self._data["uiData"]["HeatLowerSetptLimit"]
-        upper = self._data["uiData"]["HeatUpperSetptLimit"]
+        lower = self._data.get("uiData", {}).get("HeatLowerSetptLimit")
+        upper = self._data.get("uiData", {}).get("HeatUpperSetptLimit")
+        deadband = self._data.get("uiData", {}).get("Deadband")
+        coolsp = self._data.get("uiData", {}).get("ScheduleCoolSp")
         # HA sometimes doesn't send the temp, so set to current
         if temp is None:
-            temp = self._data["uiData"]["HeatSetpoint"]
+            temp = self._data.get("uiData").get("HeatSetpoint")
             _LOG.error("Didn't receive the temp to set. Setting to current temp.")
         if temp > upper or temp < lower:
             raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
+        data = {"HeatSetpoint": temp}
+        if deadband > 0 and (coolsp - deadband) <= temp:
+            data.update({"CoolSetpoint": temp+deadband})
         await self._client.set_thermostat_settings(
-            self.deviceid, {"HeatSetpoint": temp}
+            self.deviceid, data
         )
         self._data["uiData"]["HeatSetpoint"] = temp
 
     def _get_hold(self, which) -> bool | datetime.time:
         try:
-            hold = HOLD_TYPES[self._data["uiData"][f"Status{which}"]]
+            hold = HOLD_TYPES(self._data.get("uiData").get(f"Status{which}"))
         except KeyError as exc:
-            mode = self._data["uiData"][f"Status{which}"]
+            mode = self._data.get("uiData", {}).get(f"Status{which}")
             raise APIError(f"Unknown hold mode {mode}") from exc
-        period = self._data["uiData"][f"{which}NextPeriod"]
+        period = self._data.get("uiData", {}).get(f"{which}NextPeriod")
         if hold == "schedule":
             return False
         if hold == "permanent":
@@ -199,13 +203,11 @@ class Device(object):
             settings = {
                 "StatusCool": HOLD_TYPES.index("permanent"),
                 "StatusHeat": HOLD_TYPES.index("permanent"),
-                # "%sNextPeriod" % which: 0,
             }
         elif hold is False:
             settings = {
                 "StatusCool": HOLD_TYPES.index("schedule"),
                 "StatusHeat": HOLD_TYPES.index("schedule"),
-                # "%sNextPeriod" % which: 0,
             }
         elif isinstance(hold, datetime.time):
             qh = _hold_quarter_hours(hold)
@@ -218,8 +220,8 @@ class Device(object):
         else:
             raise SomeComfortError("Hold should be True, False, or datetime.time")
         if temperature:
-            lower = self._data["uiData"][f"{which}LowerSetptLimit"]
-            upper = self._data["uiData"][f"{which}UpperSetptLimit"]
+            lower = self._data.get("uiData", {}).get("HeatLowerSetptLimit")
+            upper = self._data.get("uiData", {}).get("HeatUpperSetptLimit")
             if temperature > upper or temperature < lower:
                 raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
             settings.update({f"{which}Setpoint": temperature})
@@ -247,46 +249,48 @@ class Device(object):
     @property
     def current_temperature(self) -> float:
         """The current measured ambient temperature"""
-        return self._data["uiData"]["DispTemperature"]
+        return self._data.get("uiData", {}).get("DispTemperature")
 
     @property
     def current_humidity(self) -> float | None:
         """The current measured ambient humidity"""
         return (
-            self._data["uiData"].get("IndoorHumidity")
-            if self._data["uiData"].get("IndoorHumiditySensorAvailable")
-            and self._data["uiData"].get("IndoorHumiditySensorNotFault")
+            self._data.get("uiData").get("IndoorHumidity")
+            if self._data.get("uiData", {}).get("IndoorHumiditySensorAvailable")
+            and self._data.get("uiData", {}).get("IndoorHumiditySensorNotFault")
             else None
         )
 
     @property
     def equipment_output_status(self) -> str:
         """The current equipment output status"""
-        if self._data["uiData"]["EquipmentOutputStatus"] in (0, None):
+        if self._data.get("uiData").get("EquipmentOutputStatus") in (0, None):
             if self.fan_running:
                 return "fan"
             else:
                 return "off"
-        return EQUIPMENT_OUTPUT_STATUS[self._data["uiData"]["EquipmentOutputStatus"]]
+        return EQUIPMENT_OUTPUT_STATUS.get(
+            self._data.get("uiData").get("EquipmentOutputStatus")
+        )
 
     @property
     def outdoor_temperature(self) -> float | None:
         """The current measured outdoor temperature"""
-        if self._data["uiData"]["OutdoorTemperatureAvailable"]:
-            return self._data["uiData"]["OutdoorTemperature"]
+        if self._data.get("uiData").get("OutdoorTemperatureAvailable"):
+            return self._data.get("uiData").get("OutdoorTemperature")
         return None
 
     @property
     def outdoor_humidity(self) -> float | None:
         """The current measured outdoor humidity"""
-        if self._data["uiData"]["OutdoorHumidityAvailable"]:
-            return self._data["uiData"]["OutdoorHumidity"]
+        if self._data.get("uiData").get("OutdoorHumidityAvailable"):
+            return self._data.get("uiData").get("OutdoorHumidity")
         return None
 
     @property
     def temperature_unit(self) -> str:
         """The temperature unit currently in use. Either 'F' or 'C'"""
-        return self._data["uiData"]["DisplayUnits"]
+        return self._data.get("uiData").get("DisplayUnits")
 
     @property
     def raw_ui_data(self) -> dict:
