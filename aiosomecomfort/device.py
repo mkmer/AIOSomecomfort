@@ -227,10 +227,10 @@ class Device(object):
             heatsp = self._data["uiData"]["HeatSetpoint"]
             if temperature > upper or temperature < lower:
                 raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
-            if which == "Heat" and deadband > 0 and (coolsp - deadband) <= temp:
-                settings.update({"CoolSetpoint": temp+deadband})
-            if which == "Cool" and deadband > 0 and (heatsp + deadband) >= temp:
-                settings.update({"HeatSetpoint": temp-deadband})
+            if which == "Heat" and deadband > 0 and (coolsp - deadband) <= temperature:
+                settings.update({"CoolSetpoint": temperature+deadband})
+            if which == "Cool" and deadband > 0 and (heatsp + deadband) >= temperature:
+                settings.update({"HeatSetpoint": temperature-deadband})
             settings.update({f"{which}Setpoint": temperature})
         await self._client.set_thermostat_settings(self.deviceid, settings)
         self._data["uiData"].update(settings)
