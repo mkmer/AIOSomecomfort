@@ -1,4 +1,5 @@
 from __future__ import annotations
+import datetime
 import logging
 import urllib.parse as urllib
 import aiohttp
@@ -11,6 +12,8 @@ _LOG = logging.getLogger("somecomfort")
 
 AUTH_COOKIE = ".ASPXAUTH_TRUEHOME"
 DOMAIN = "www.mytotalconnectcomfort.com"
+MIN_LOGIN_TIME = datetime.timedelta(minutes=10)
+MAX_LOGIN_ATTEMPTS = 3
 
 
 def _convert_errors(fn):
@@ -47,6 +50,15 @@ class AIOSomeComfort(object):
         }
         self._locations = {}
         self._baseurl = f"https://{DOMAIN}"
+        self._null_cookie_count = 0
+        self._next_login = datetime.datetime.utcnow()
+
+    def _set_null_count(self) -> None:
+        """Set null cookie count and retry timout."""
+
+        self._null_cookie_count += 1
+        if self._null_cookie_count >= MAX_LOGIN_ATTEMPTS:
+            self._next_login = datetime.datetime.utcnow() + MIN_LOGIN_TIME
 
     @_convert_errors
     async def login(self) -> None:
@@ -62,6 +74,10 @@ class AIOSomeComfort(object):
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
         self._session.cookie_jar.clear_domain(DOMAIN)
+
+        if self._next_login > datetime.datetime.utcnow():
+            raise APIRateLimited(f"Rate limit on login: Waiting {MIN_LOGIN_TIME}")
+
         resp = await self._session.post(
             url, timeout=self._timeout, headers=self._headers
         )
@@ -77,6 +93,8 @@ class AIOSomeComfort(object):
             # I'll leave it here in case they start doing the
             # right thing.
             _LOG.error("Login as %s failed", self._username)
+            self._set_null_count()
+
             raise AuthError("Login as %s failed" % self._username)
 
         elif resp.status != 200:
@@ -91,7 +109,9 @@ class AIOSomeComfort(object):
         # if we get null cookies for this, the login has failed.
         if AUTH_COOKIE in resp2.cookies and resp2.cookies[AUTH_COOKIE].value == "":
             _LOG.error("Login null cookie - site may be down")
-            raise ConnectionError("Null cookie connection error %s" % resp2.status)
+            self._set_null_count()
+
+            raise AuthError("Null cookie connection error %s" % resp2.status)
 
         if resp2.status == 401:
             _LOG.error(
@@ -99,6 +119,9 @@ class AIOSomeComfort(object):
                 self._username,
                 resp2.status,
             )
+
+            self._set_null_count()
+
             raise AuthError(
                 "Login as %s failed - Unauthorized %s" % (self._username, resp2.status)
             )
@@ -125,11 +148,12 @@ class AIOSomeComfort(object):
         req = args[0].replace(self._baseurl, "")
 
         if resp.status == 200 and resp.content_type == "application/json":
+            self._null_cookie_count = 0
             return await resp.json()
 
         if resp.status == 401:
             _LOG.error("401 Error at update (Key expired?).")
-            raise APIRateLimited("401 Error at update (Key Expired?).")
+            raise UnauthorizedError("401 Error at update (Key Expired?).")
 
         if resp.status == 503:
             _LOG.error("Service Unavailable.")
@@ -138,7 +162,7 @@ class AIOSomeComfort(object):
         # Some other non 200 status
         _LOG.error("API returned %s from %s request", resp.status, req)
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
-        raise SomeComfortError("API returned %s, %s" % (resp.status, req))
+        raise UnexpectedResponse("API returned %s, %s" % (resp.status, req))
 
     async def _get_json(self, *args, **kwargs) -> str | None:
         return await self._request_json("get", *args, **kwargs)
