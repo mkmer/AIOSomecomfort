@@ -82,15 +82,15 @@ class Device(object):
     def fan_running(self) -> bool:
         """Returns a boolean indicating the current state of the fan"""
         if self._data.get("hasFan"):
-            return self._data.get("fanData", {}).get("fanIsRunning", False)
+            return self._data["fanData"]["fanIsRunning"]
         return False
 
     @property
     def fan_mode(self) -> str | None:
         """Returns one of FAN_MODES indicating the current setting"""
-        if self._data.get("fanData", {}).get("fanMode") >= len(FAN_MODES):
+        if self._data["fanData"]["fanMode"] >= len(FAN_MODES):
             return None
-        return FAN_MODES[self._data.get("fanData", {}).get("fanMode")]
+        return FAN_MODES[self._data["fanData"]["fanMode"]]
 
     async def set_fan_mode(self, mode) -> None:
         """Set the fan mode async."""
@@ -100,7 +100,7 @@ class Device(object):
             raise SomeComfortError("Invalid fan mode %s" % mode) from ex
 
         key = f"fanMode{mode.title()}Allowed"
-        if not self._data.get("fanData", {}).get(key):
+        if not self._data["fanData"][key]:
             raise SomeComfortError("Device does not support %s" % mode)
         await self._client.set_thermostat_settings(
             self.deviceid, {"FanMode": mode_index}
@@ -110,11 +110,11 @@ class Device(object):
     @property
     def system_mode(self) -> str:
         """Returns one of SYSTEM_MODES indicating the current setting"""
-        if self._data.get("uiData", {}).get("SystemSwitchPosition") >= len(
+        if self._data["uiData"]["SystemSwitchPosition"] >= len(
             SYSTEM_MODES
         ):
             return None
-        return SYSTEM_MODES[self._data.get("uiData", {}).get("SystemSwitchPosition")]
+        return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
 
     async def set_system_mode(self, mode) -> None:
         """Async set the system mode."""
@@ -127,7 +127,7 @@ class Device(object):
         else:
             key = f"Switch{mode.title()}Allowed"
         try:
-            if not self._data.get("uiData", {}).get(key):
+            if not self._data["uiData"][key]:
                 raise SomeComfortError(f"Device does not support {mode}")
         except KeyError as exc:
             raise APIError(f"Unknown Key: {key}") from exc
@@ -139,7 +139,7 @@ class Device(object):
     @property
     def setpoint_cool(self) -> float:
         """The target temperature when in cooling mode"""
-        return self._data.get("uiData", {}).get("CoolSetpoint")
+        return self._data["uiData"]["CoolSetpoint"]
 
     async def set_setpoint_cool(self, temp) -> None:
         """Async set the target temperature when in cooling mode"""
@@ -262,9 +262,9 @@ class Device(object):
     def current_humidity(self) -> float | None:
         """The current measured ambient humidity"""
         return (
-            self._data["uiData"].get("IndoorHumidity")
-            if self._data["uiData"].get("IndoorHumiditySensorAvailable")
-            and self._data["uiData"].get("IndoorHumiditySensorNotFault")
+            self._data["uiData"]["IndoorHumidity"]
+            if self._data["uiData"]["IndoorHumiditySensorAvailable"]
+            and self._data["uiData"]["IndoorHumiditySensorNotFault"]
             else None
         )
 
