@@ -8,7 +8,7 @@ with open("README.rst", "r") as fh:
 
 setup(
     name="AIOSomecomfort",
-    version="0.0.17",
+    version="0.0.18",
     description="A client for Honeywell's US-based cloud devices",
     license="MIT",
     long_description=long_description,
