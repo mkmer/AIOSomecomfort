@@ -88,9 +88,13 @@ class Device(object):
     @property
     def fan_mode(self) -> str | None:
         """Returns one of FAN_MODES indicating the current setting"""
-        if self._data["fanData"]["fanMode"] >= len(FAN_MODES):
-            return None
-        return FAN_MODES[self._data["fanData"]["fanMode"]]
+        try:
+            return FAN_MODES[self._data["fanData"]["fanMode"]]
+        except (KeyError, TypeError, IndexError):
+            if self._data["hasFan"]:
+                raise APIError("Unknown fan mode %s" % self._data["fanData"]["fanMode"])
+            else:
+                return None
 
     async def set_fan_mode(self, mode) -> None:
         """Set the fan mode async."""
@@ -110,11 +114,13 @@ class Device(object):
     @property
     def system_mode(self) -> str:
         """Returns one of SYSTEM_MODES indicating the current setting"""
-        if self._data["uiData"]["SystemSwitchPosition"] >= len(
-            SYSTEM_MODES
-        ):
-            return None
-        return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
+        try:
+            return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
+        except KeyError as exc:
+            raise APIError(
+                "Unknown system mode %s"
+                % (self._data["uiData"]["SystemSwitchPosition"])
+            ) from exc
 
     async def set_system_mode(self, mode) -> None:
         """Async set the system mode."""
