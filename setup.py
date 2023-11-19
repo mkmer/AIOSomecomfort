@@ -16,7 +16,7 @@ setup(
     author="Mike Kasper",
     author_email="m_kasper@sbcglobal.net",
     url="https://github.com/mkmer/AIOSomecomfort",
-    download_url="https://github.com/mkmer/AIOSomecomfort/archive/refs/tags/0.0.17.tar.gz",
+    download_url="https://github.com/mkmer/AIOSomecomfort/archive/refs/tags/0.0.18.tar.gz",
     packages=["aiosomecomfort"],
     classifiers=[
         "Development Status :: 4 - Beta",
