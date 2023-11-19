@@ -145,10 +145,16 @@ class Device(object):
         """Async set the target temperature when in cooling mode"""
         lower = self._data.get("uiData", {}).get("CoolLowerSetptLimit")
         upper = self._data.get("uiData", {}).get("CoolUpperSetptLimit")
+        deadband = self._data.get("uiData", {}).get("Deadband")
+        heatsp = self._data.get("uiData", {}).get("ScheduleHeatSp")
+
         if temp > upper or temp < lower:
             raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
+        data = {"CoolSetpoint": temp}
+        if deadband > 0 and (heatsp + deadband) >= temp:
+            data.update({"HeatSetpoint": temp-deadband})
         await self._client.set_thermostat_settings(
-            self.deviceid, {"CoolSetpoint": temp}
+            self.deviceid, data
         )
         self._data["uiData"]["CoolSetpoint"] = temp
 
@@ -161,14 +167,19 @@ class Device(object):
         """Async set the target temperature when in heating mode"""
         lower = self._data.get("uiData", {}).get("HeatLowerSetptLimit")
         upper = self._data.get("uiData", {}).get("HeatUpperSetptLimit")
+        deadband = self._data.get("uiData", {}).get("Deadband")
+        coolsp = self._data.get("uiData", {}).get("ScheduleCoolSp")
         # HA sometimes doesn't send the temp, so set to current
         if temp is None:
             temp = self._data.get("uiData").get("HeatSetpoint")
             _LOG.error("Didn't receive the temp to set. Setting to current temp.")
         if temp > upper or temp < lower:
             raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
+        data = {"HeatSetpoint": temp}
+        if deadband > 0 and (coolsp - deadband) <= temp:
+            data.update({"CoolSetpoint": temp+deadband})
         await self._client.set_thermostat_settings(
-            self.deviceid, {"HeatSetpoint": temp}
+            self.deviceid, data
         )
         self._data["uiData"]["HeatSetpoint"] = temp
 
