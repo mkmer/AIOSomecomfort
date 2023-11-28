@@ -135,7 +135,7 @@ class AIOSomeComfort(object):
             kwargs["timeout"] = self._timeout
         kwargs["headers"] = self._headers
         resp: aiohttp.ClientResponse = await getattr(self._session, method)(
-            *args, **kwargs
+            *args, **kwargs, allow_redirects=False
         )
 
         # Check again for the deformed cookie
@@ -155,7 +155,7 @@ class AIOSomeComfort(object):
             _LOG.error("401 Error at update (Key expired?).")
             raise UnauthorizedError("401 Error at update (Key Expired?).")
 
-        if resp.status == 503:
+        if resp.status == 503 or "Error?aspxerrorpath" in resp.real_url:
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
 
