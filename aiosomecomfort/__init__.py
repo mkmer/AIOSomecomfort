@@ -160,8 +160,8 @@ class AIOSomeComfort(object):
             raise UnauthorizedError("403 Error at update (Key Expired?).")
 
         if resp.status in [500,502,503] or len(resp.history) > 0:
-            _LOG.error("Service Unavailable.")
-            raise ConnectionError("Service Unavailable.")
+            _LOG.error("Service Unavailable %s, %s.", resp.status, resp.history)
+            raise ConnectionError("Service Unavailable %s.", resp.status)
 
         # Some other non 200 status or 200 but not json.
         _LOG.error("API returned %s from %s request", resp.status, req)
