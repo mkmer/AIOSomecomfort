@@ -102,7 +102,7 @@ class AIOSomeComfort(object):
             raise ConnectionError("Connection error %s" % resp.status)
 
         self._headers["Content-Type"] = "application/json"
-        resp2 = await self._session.get(
+        resp2: aiohttp.ClientResponse = await self._session.get(
             f"{self._baseurl}/portal", timeout=self._timeout, headers=self._headers
         )  # this should redirect if we're logged in
 
@@ -135,7 +135,7 @@ class AIOSomeComfort(object):
             kwargs["timeout"] = self._timeout
         kwargs["headers"] = self._headers
         resp: aiohttp.ClientResponse = await getattr(self._session, method)(
-            *args, **kwargs, allow_redirects=False
+            *args, **kwargs
         )
 
         # Check again for the deformed cookie
@@ -155,11 +155,15 @@ class AIOSomeComfort(object):
             _LOG.error("401 Error at update (Key expired?).")
             raise UnauthorizedError("401 Error at update (Key Expired?).")
 
-        if resp.status == 503 or "Error?aspxerrorpath" in resp.real_url:
+        if resp.status == 403:
+            _LOG.error("403 Error at update (Key expired?).")
+            raise UnauthorizedError("403 Error at update (Key Expired?).")
+
+        if resp.status in [500,502,503] or len(resp.history > 0):
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
 
-        # Some other non 200 status
+        # Some other non 200 status or 200 but not json.
         _LOG.error("API returned %s from %s request", resp.status, req)
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
         raise UnexpectedResponse("API returned %s, %s" % (resp.status, req))
