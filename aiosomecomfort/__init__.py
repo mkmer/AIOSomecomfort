@@ -159,7 +159,7 @@ class AIOSomeComfort(object):
             _LOG.error("403 Error at update (Key expired?).")
             raise UnauthorizedError("403 Error at update (Key Expired?).")
 
-        if resp.status in [500,502,503] or len(resp.history > 0):
+        if resp.status in [500,502,503] or len(resp.history) > 0:
             _LOG.error("Service Unavailable.")
             raise ConnectionError("Service Unavailable.")
 
