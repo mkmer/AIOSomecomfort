@@ -53,6 +53,11 @@ class AIOSomeComfort(object):
         self._null_cookie_count = 0
         self._next_login = datetime.datetime.utcnow()
 
+    @property
+    def next_login(self) -> datetime:
+        """Return next allowed login time for rate limit."""
+        return self._next_login
+
     def _set_null_count(self) -> None:
         """Set null cookie count and retry timout."""
 
