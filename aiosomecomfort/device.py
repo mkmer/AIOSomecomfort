@@ -49,6 +49,8 @@ class Device(object):
 
     async def refresh(self) -> None:
         """Refresh the Honeywell device data."""
+        if if self._next_login > datetime.datetime.utcnow():
+             raise APIRateLimited(f"Rate limit on login: Waiting {MIN_LOGIN_TIME}")
         data = await self._client.get_thermostat_data(self.deviceid)
         if data is not None:
             if not data.get("success"):
