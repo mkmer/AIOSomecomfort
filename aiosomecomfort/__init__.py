@@ -52,6 +52,7 @@ class AIOSomeComfort(object):
         self._baseurl = f"https://{DOMAIN}"
         self._null_cookie_count = 0
         self._next_login = datetime.datetime.utcnow()
+        self._counter = 1700000000000 # sequnce for polling
 
     @property
     def next_login(self) -> datetime:
@@ -197,7 +198,8 @@ class AIOSomeComfort(object):
 
     async def get_thermostat_data(self, thermostat_id: str) -> str:
         """Get thermostat data from API"""
-        url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}"
+        url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}?_={self._counter}"
+        self._counter+=1
         return await self._get_json(url)
 
     async def set_thermostat_settings(
