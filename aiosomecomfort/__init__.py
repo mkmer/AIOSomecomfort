@@ -87,7 +87,7 @@ class AIOSomeComfort(object):
         resp = await self._session.post(
             url, timeout=self._timeout, headers=self._headers
         )
-
+        _LOG.debug("Login Response %s", await resp.text())
         # The TUREHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
         cookies = resp.cookies
         if AUTH_COOKIE in cookies:
@@ -101,11 +101,11 @@ class AIOSomeComfort(object):
             _LOG.error("Login as %s failed", self._username)
             self._set_null_count()
 
-            raise AuthError("Login as %s failed" % self._username)
+            raise AuthError(f"Login as %s failed {self._username}")
 
         elif resp.status != 200:
             _LOG.error("Connection error %s", resp.status)
-            raise ConnectionError("Connection error %s" % resp.status)
+            raise ConnectionError(f"Connection error {resp.status}")
 
         self._headers["Content-Type"] = "application/json"
         resp2: aiohttp.ClientResponse = await self._session.get(
@@ -117,7 +117,7 @@ class AIOSomeComfort(object):
             _LOG.error("Login null cookie - site may be down")
             self._set_null_count()
 
-            raise AuthError("Null cookie connection error %s" % resp2.status)
+            raise AuthError(f"Null cookie connection error {resp2.status}")
 
         if resp2.status == 401:
             _LOG.error(
@@ -129,12 +129,12 @@ class AIOSomeComfort(object):
             self._set_null_count()
 
             raise AuthError(
-                "Login as %s failed - Unauthorized %s" % (self._username, resp2.status)
+                f"Login as %s failed - Unauthorized {self._username}, {resp2.status}"
             )
 
         if resp2.status != 200:
             _LOG.error("Connection error %s", resp2.status)
-            raise ConnectionError("Connection error %s" % resp2.status)
+            raise ConnectionError(f"Connection error {resp2.status}")
 
     async def _request_json(self, method: str, *args, **kwargs) -> str | None:
         if "timeout" not in kwargs:
@@ -152,7 +152,7 @@ class AIOSomeComfort(object):
             self._session.cookie_jar.update_cookies(cookies=cookies)
 
         req = args[0].replace(self._baseurl, "")
-
+        _LOG.debug("request json response %s with payload %s", resp, await resp.text())
         if resp.status == 200 and resp.content_type == "application/json":
             self._null_cookie_count = 0
             return await resp.json()
@@ -167,12 +167,12 @@ class AIOSomeComfort(object):
 
         if resp.status in [500,502,503] or len(resp.history) > 0:
             _LOG.error("Service Unavailable %s, %s.", resp.status, resp.history)
-            raise ConnectionError("Service Unavailable %s.", resp.status)
+            raise ConnectionError(f"Service Unavailable {resp.status}.")
 
         # Some other non 200 status or 200 but not json.
         _LOG.error("API returned %s from %s request", resp.status, req)
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
-        raise UnexpectedResponse("API returned %s, %s" % (resp.status, req))
+        raise UnexpectedResponse(f"API returned {resp.status}, {req}")
 
     async def _get_json(self, *args, **kwargs) -> str | None:
         return await self._request_json("get", *args, **kwargs)
@@ -237,7 +237,7 @@ class AIOSomeComfort(object):
                 except KeyError as ex:
                     _LOG.exception(
                         "Failed to process location `%s`: missing %s element"
-                        % (raw_location.get("LocationID", "unknown"), ex.args[0])
+                        , raw_location.get("LocationID", "unknown"), ex.args[0]
                     )
                 self._locations[location.locationid] = location
 

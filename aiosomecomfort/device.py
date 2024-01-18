@@ -52,9 +52,10 @@ class Device(object):
         if self._client.next_login > datetime.datetime.utcnow():
              raise APIRateLimited(f"Rate limit on login: Waiting {self._client.next_login-datetime.datetime.utcnow()}")
         data = await self._client.get_thermostat_data(self.deviceid)
+        _LOG.debug("Refresh data %s", data)
         if data is not None:
             if not data.get("success"):
-                _LOG.error("API reported failure to query device %s" % self.deviceid)
+                _LOG.error("API reported failure to query device %s", self.deviceid)
             self._alive = data.get("deviceLive")
             self._commslost = data.get("communicationLost")
             self._data = data.get("latestData")
@@ -94,7 +95,7 @@ class Device(object):
             return FAN_MODES[self._data["fanData"]["fanMode"]]
         except (KeyError, TypeError, IndexError):
             if self._data["hasFan"]:
-                raise APIError("Unknown fan mode %s" % self._data["fanData"]["fanMode"])
+                raise APIError(f'Unknown fan mode {self._data["fanData"]["fanMode"]}')
             else:
                 return None
 
@@ -103,11 +104,11 @@ class Device(object):
         try:
             mode_index = FAN_MODES.index(mode)
         except ValueError as ex:
-            raise SomeComfortError("Invalid fan mode %s" % mode) from ex
+            raise SomeComfortError(f"Invalid fan mode {mode}") from ex
 
         key = f"fanMode{mode.title()}Allowed"
         if not self._data["fanData"][key]:
-            raise SomeComfortError("Device does not support %s" % mode)
+            raise SomeComfortError(f"Device does not support {mode}")
         await self._client.set_thermostat_settings(
             self.deviceid, {"FanMode": mode_index}
         )
@@ -120,8 +121,7 @@ class Device(object):
             return SYSTEM_MODES[self._data["uiData"]["SystemSwitchPosition"]]
         except KeyError as exc:
             raise APIError(
-                "Unknown system mode %s"
-                % (self._data["uiData"]["SystemSwitchPosition"])
+                'Unknown system mode {self._data["uiData"]["SystemSwitchPosition"]}'
             ) from exc
 
     async def set_system_mode(self, mode) -> None:
