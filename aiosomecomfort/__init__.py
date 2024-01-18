@@ -79,7 +79,6 @@ class AIOSomeComfort(object):
         self._headers["Content-Type"] = "application/x-www-form-urlencoded"
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
-        self._session.cookie_jar.clear_domain(DOMAIN)
 
         if self._next_login > datetime.datetime.utcnow():
             raise APIRateLimited(f"Rate limit on login: Waiting {MIN_LOGIN_TIME}")
