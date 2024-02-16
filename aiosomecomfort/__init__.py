@@ -169,7 +169,7 @@ class AIOSomeComfort(object):
             raise ConnectionError(f"Service Unavailable {resp.status}.")
 
         # Some other non 200 status or 200 but not json.
-        _LOG.error("API returned %s from %s request", resp.status, req)
+        _LOG.info("API returned %s from %s request", resp.status, req)
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
         raise UnexpectedResponse(f"API returned {resp.status}, {req}")
 
