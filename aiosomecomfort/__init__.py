@@ -244,6 +244,44 @@ class AIOSomeComfort(object):
         if result is None or result.get("success") != 1:
             raise APIError("API rejected humidity settings")
         
+    async def humidity_auto(
+        self, thermostat_id: str
+    ) -> None:
+        """Set humidity settings."""
+        data = {
+            "DeviceID": thermostat_id,
+            "Mode": 1,
+            "LowerLimit": None,
+            "UpperLimit": None,
+            "Setpoint": None,
+            "DeadBand": None,
+        }
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._baseurl}/portal/Device/Menu/Humidifier"
+        result = await self._post_json(url, json=data)
+        _LOG.debug("Received humidity setting response %s", result)
+        if result is None or result.get("success") != 1:
+            raise APIError("API rejected humidity settings")
+
+    async def humidity_off(
+        self, thermostat_id: str
+    ) -> None:
+        """Set humidity settings."""
+        data = {
+            "DeviceID": thermostat_id,
+            "Mode": 0,
+            "LowerLimit": None,
+            "UpperLimit": None,
+            "Setpoint": None,
+            "DeadBand": None,
+        }
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._baseurl}/portal/Device/Menu/Humidifier"
+        result = await self._post_json(url, json=data)
+        _LOG.debug("Received humidity setting response %s", result)
+        if result is None or result.get("success") != 1:
+            raise APIError("API rejected humidity settings")
+
     @_convert_errors
     async def discover(self) -> None:
         """Discover devices on the account."""
