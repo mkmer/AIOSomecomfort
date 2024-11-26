@@ -97,7 +97,7 @@ async def do_holds(client, args, device):
 
 
 async def _main(session):
-    number_things = ["setpoint_cool", "setpoint_heat"]
+    number_things = ["setpoint_cool", "setpoint_heat","humidity"]
     string_things = ["fan_mode", "system_mode"]
     bool_things = ["cancel_hold", "permanent_hold"]
     settable_things = {float: number_things, str: string_things}

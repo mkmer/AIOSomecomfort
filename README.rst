@@ -49,6 +49,8 @@ Installing
                           Get outdoor_humidity
     --get_equipment_output_status
                           Get equipment_output_status
+    --set_humidity HUMIDITY_VALUE
+                          Set humidity setpoint.
     --cancel_hold         Set cancel_hold
     --permanent_hold      Set permanent_hold
     --hold_until HOLD_UNTIL
