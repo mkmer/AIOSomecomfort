@@ -51,7 +51,7 @@ class AIOSomeComfort(object):
         self._locations = {}
         self._baseurl = f"https://{DOMAIN}"
         self._null_cookie_count = 0
-        self._next_login = datetime.datetime.utcnow()
+        self._next_login = datetime.datetime.now(datetime.timezone.utc)
         self._counter = 1700000000000 # sequnce for polling
 
     @property
@@ -64,7 +64,7 @@ class AIOSomeComfort(object):
 
         self._null_cookie_count += 1
         if self._null_cookie_count >= MAX_LOGIN_ATTEMPTS:
-            self._next_login = datetime.datetime.utcnow() + MIN_LOGIN_TIME
+            self._next_login = datetime.datetime.now(datetime.timezone.utc) + MIN_LOGIN_TIME
 
     @_convert_errors
     async def login(self) -> None:
@@ -80,7 +80,7 @@ class AIOSomeComfort(object):
         # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
         url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
 
-        if self._next_login > datetime.datetime.utcnow():
+        if self._next_login > datetime.datetime.now(datetime.timezone.utc):
             raise APIRateLimited(f"Rate limit on login: Waiting {MIN_LOGIN_TIME}")
 
         resp = await self._session.post(
@@ -199,6 +199,11 @@ class AIOSomeComfort(object):
         """Get thermostat data from API"""
         url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}?_={self._counter}"
         self._counter+=1
+        return await self._get_json(url)
+
+    async def get_humidifier_data(self, thermostat_id: str) -> str:
+        """Get thermostat data from API"""
+        url = f"{self._baseurl}/portal/Device/Menu/Humidifier"
         return await self._get_json(url)
 
     async def set_thermostat_settings(

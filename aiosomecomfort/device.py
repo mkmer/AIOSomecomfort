@@ -49,8 +49,8 @@ class Device(object):
 
     async def refresh(self) -> None:
         """Refresh the Honeywell device data."""
-        if self._client.next_login > datetime.datetime.utcnow():
-             raise APIRateLimited(f"Rate limit on login: Waiting {self._client.next_login-datetime.datetime.utcnow()}")
+        if self._client.next_login > datetime.datetime.now(datetime.timezone.utc):
+             raise APIRateLimited(f"Rate limit on login: Waiting {self._client.next_login-datetime.datetime.now(datetime.timezone.utc)}")
         data = await self._client.get_thermostat_data(self.deviceid)
         _LOG.debug("Refresh data %s", data)
         if data is not None:
@@ -266,6 +266,10 @@ class Device(object):
         """The current measured ambient temperature"""
         return self._data["uiData"]["DispTemperature"]
 
+    @property
+    def has_humidifier(self) -> bool:
+        return(self._data["fanData"]["canControlHumidification"])
+    
     @property
     def current_humidity(self) -> float | None:
         """The current measured ambient humidity"""
