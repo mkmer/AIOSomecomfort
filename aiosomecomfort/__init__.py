@@ -135,6 +135,16 @@ class AIOSomeComfort(object):
             _LOG.error("Connection error %s", resp2.status)
             raise ConnectionError(f"Connection error {resp2.status}")
 
+    @_convert_errors
+    async def logoff(self) -> None:
+        """Login to Honeywell API."""
+        url = f"{self._baseurl}/portal/Account/LogOff"
+        resp = await self._session.post(
+            url, timeout=self._timeout, headers=self._headers
+        )
+        _LOG.debug("LogOff Response %s", await resp.text())
+
+
     async def _request_json(self, method: str, *args, **kwargs) -> str | None:
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
@@ -152,9 +162,11 @@ class AIOSomeComfort(object):
 
         req = args[0].replace(self._baseurl, "")
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
-        if resp.status == 200 and resp.content_type == "application/json":
+        if resp.status == 200 and (resp.content_type in ["application/json","application/octet-stream"]):
             self._null_cookie_count = 0
-            return await resp.json()
+            if resp.content_type == "application/json":
+                return await resp.json()
+            return resp
 
         if resp.status == 401:
             _LOG.error("401 Error at update (Key expired?).")
@@ -195,6 +207,11 @@ class AIOSomeComfort(object):
             return json_responses
         return None
 
+    async def get_data(self,thermostat_id: str) -> str:
+        """Get device total data structure."""
+        url = f"{self._baseurl}/portal/Device/Menu/GetData?deviceID={thermostat_id}"
+        return await self._post_json(url)
+
     async def get_thermostat_data(self, thermostat_id: str) -> str:
         """Get thermostat data from API"""
         url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}?_={self._counter}"
@@ -203,8 +220,13 @@ class AIOSomeComfort(object):
 
     async def get_humidifier_data(self, thermostat_id: str) -> str:
         """Get thermostat data from API"""
-        url = f"{self._baseurl}/portal/Device/Menu/Humidifier"
-        return await self._get_json(url)
+        url = f"{self._baseurl}/portal/Device/Menu/GetHumData/{thermostat_id}"
+        return await self._post_json(url)
+
+    async def get_dehumidifier_data(self, thermostat_id: str) -> str:
+        """Get thermostat data from API"""
+        url = f"{self._baseurl}/portal/Device/Menu/GetDehumData/{thermostat_id}"
+        return await self._post_json(url)
 
     async def set_thermostat_settings(
         self, thermostat_id: str, settings: dict[str, str]
@@ -230,17 +252,17 @@ class AIOSomeComfort(object):
         if result is None or result.get("success") != 1:
             raise APIError("API rejected thermostat settings")
 
-    async def set_humidity(
+    async def set_humidity_setpoint(
         self, thermostat_id: str, humidity: int
     ) -> None:
         """Set humidity settings."""
         data = {
-            "DeviceID": thermostat_id,
+            "DeviceId": thermostat_id,
             "Mode": 1,
-            "LowerLimit": 10,
-            "UpperLimit": 60,
+            #"LowerLimit": 10,
+            #"UpperLimit": 60,
             "Setpoint": humidity,
-            "DeadBand": None,
+            #"DeadBand": None,
         }
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._baseurl}/portal/Device/Menu/Humidifier"
@@ -249,12 +271,12 @@ class AIOSomeComfort(object):
         if result is None or result.get("success") != 1:
             raise APIError("API rejected humidity settings")
         
-    async def humidity_auto(
+    async def set_humidity_auto(
         self, thermostat_id: str
     ) -> None:
         """Set humidity settings."""
         data = {
-            "DeviceID": thermostat_id,
+            "DeviceId": thermostat_id,
             "Mode": 1,
             "LowerLimit": None,
             "UpperLimit": None,
@@ -268,16 +290,17 @@ class AIOSomeComfort(object):
         if result is None or result.get("success") != 1:
             raise APIError("API rejected humidity settings")
 
-    async def humidity_off(
+    async def set_humidity_off(
         self, thermostat_id: str
     ) -> None:
         """Set humidity settings."""
         data = {
-            "DeviceID": thermostat_id,
+            "DeviceId": thermostat_id,
             "Mode": 0,
             "LowerLimit": None,
             "UpperLimit": None,
             "Setpoint": None,
+            "SetpointValue": None,
             "DeadBand": None,
         }
         _LOG.debug("Sending Data: %s", data)

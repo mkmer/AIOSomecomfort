@@ -30,6 +30,7 @@ class Device(object):
         self._client = client
         self._location = location
         self._data = {}
+        self._gdata = {}
         self._last_refresh = 0
         self._deviceid = None
         self._macid = None
@@ -59,6 +60,8 @@ class Device(object):
             self._alive = data.get("deviceLive")
             self._commslost = data.get("communicationLost")
             self._data = data.get("latestData")
+            if not self._gdata or self._gdata.get("Humidifier") or self._gdata.get("Dehumidifier"):
+                self._gdata = await self._client.get_data(self.deviceid)
             self._last_refresh = time.time()
 
     @property
@@ -268,8 +271,55 @@ class Device(object):
 
     @property
     def has_humidifier(self) -> bool:
-        return(self._data["fanData"]["canControlHumidification"])
+        """System has humdifier."""
+        return(self._gdata.get("Humidifier") is not None)
     
+    @property
+    def humidifier_upper_limit(self) -> int:
+        """Humidifier upper limit."""
+        return int(self._gdata['Humidifier'].get('UpperLimit'))
+    
+    @property
+    def humidifier_lower_limit(self) -> int:
+        """Humidifier lower limit."""
+        return int(self._gdata['Humidifier'].get('LowerLimit'))
+    
+    @property
+    def humidifier_setpoint(self) -> int:
+        """Humidifier current setpoint."""
+        return int(self._gdata['Humidifier'].get('Setpoint'))
+
+    @property
+    def humidifier_mode(self) -> int:
+        """Humidifier mode: 1 = auto, 0 = off."""
+        return int(self._gdata['Humidifier'].get('Mode'))
+
+    @property
+    def has_dehumidifier(self) -> bool:
+        """System has dehumidifier."""
+        return(self._gdata.get("Dehumidifier") is not None)
+
+    @property
+    def dehumidifier_upper_limit(self) -> int:
+        """Dehumidifier upper limit."""
+        return int(self._gdata['Dehumidifier'].get('UpperLimit'))
+    
+    @property
+    def dehumidifier_setpoint(self) -> int:
+        """Dehumidifer current setpoint."""
+        return int(self._gdata['Dehumidifier'].get('Setpoint'))
+
+    @property
+    def dehumidifier_lower_limit(self) -> int:
+        """Dehmidifer lower limig."""
+        return int(self._gdata['Dehumidifier'].get('LowerLimit'))
+
+    @property
+    def dehumidifier_mode(self) -> int:
+        """Dehumidifier Mode. 1 = auto, 0 = off."""
+        return int(self._gdata['Humidifier'].get('Mode'))
+
+
     @property
     def current_humidity(self) -> float | None:
         """The current measured ambient humidity"""
@@ -332,6 +382,14 @@ class Device(object):
         Note that this is read only!
         """
         return copy.deepcopy(self._data["drData"])
+    
+    @property
+    def raw_data(self) -> dict:
+        """The raw drData structure from the API.
 
+        Note that this is read only!
+        """
+        return copy.deepcopy(self._gdata)
+    
     def __repr__(self) -> str:
         return f"Device<{self.deviceid}:{self.name}>"

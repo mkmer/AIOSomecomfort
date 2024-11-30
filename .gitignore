@@ -8,3 +8,4 @@ dist/
 __pycache__/
 test dont share.py
 test_dont_share_shortput.py
+test copy.py
