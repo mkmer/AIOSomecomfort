@@ -10,6 +10,7 @@ SYSTEM_MODES = ["emheat", "heat", "off", "cool", "auto", "auto"]
 HOLD_TYPES = ["schedule", "temporary", "permanent"]
 EQUIPMENT_OUTPUT_STATUS = ["off/fan", "heat", "cool"]
 _LOG = logging.getLogger("somecomfort")
+HUMIDITY_STEP = 5 
 
 
 def _hold_quarter_hours(deadline):
@@ -21,6 +22,10 @@ def _hold_quarter_hours(deadline):
 def _hold_deadline(quarter_hours) -> datetime.time:
     minutes = quarter_hours * 15
     return datetime.time(hour=int(minutes / 60), minute=minutes % 60)
+
+def _humidity_step(self,value:int) -> int:
+    """Round value to steps of 5."""
+    return HUMIDITY_STEP * round (value/HUMIDITY_STEP)
 
 
 class Device(object):
@@ -363,7 +368,7 @@ class Device(object):
         """Set humidity settings."""
         data = self._gdata['Humidifier']
         data.update({
-            "Setpoint": humidity,
+            "Setpoint": _humidity_step(humidity),
             })
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
@@ -398,7 +403,7 @@ class Device(object):
         """Set humidity settings."""
         data = self._gdata['Dehumidifier']
         data.update({
-            "Setpoint": humidity,
+            "Setpoint": _humidity_step(humidity),
             })
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
@@ -461,6 +466,6 @@ class Device(object):
         Note that this is read only!
         """
         return copy.deepcopy(self._gdata)
-    
+        
     def __repr__(self) -> str:
         return f"Device<{self.deviceid}:{self.name}>"
