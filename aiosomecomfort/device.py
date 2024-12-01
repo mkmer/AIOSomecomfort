@@ -359,6 +359,77 @@ class Device(object):
         """The temperature unit currently in use. Either 'F' or 'C'"""
         return self._data["uiData"]["DisplayUnits"]
 
+    async def set_humidifier_setpoint(self, humidity: int) -> None:
+        """Set humidity settings."""
+        data = self._gdata['Humidifier']
+        data.update({
+            "Setpoint": humidity,
+            })
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
+        result = await self._client._post_json(url, json=data)
+        _LOG.debug("Received Humidifier setting response %s", result)
+        if result is None or not result.ok:
+            raise APIError("API rejected humidity settings")
+        
+    async def set_humidifier_auto(self) -> None:
+        """Set humidity settings."""
+        data = self._gdata['Humidifier']
+        data.update({"Mode": 1})
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
+        result = await self._client._post_json(url, json=data)
+        _LOG.debug("Received Humidifier setting response %s", result)
+        if result is None or not result.ok:
+            raise APIError("API rejected humidity settings")
+
+    async def set_humidifier_off(self) -> None:
+        """Set humidity settings."""
+        data = self._gdata['Humidifier']
+        data.update({"Mode": 0})
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
+        result = await self._client._post_json(url, json=data)
+        _LOG.debug("Received Humidifier setting response %s", result)
+        if result is None or not result.ok:
+            raise APIError("API rejected humidity settings")
+
+    async def set_dehumidifier_setpoint(self, humidity: int) -> None:
+        """Set humidity settings."""
+        data = self._gdata['Dehumidifier']
+        data.update({
+            "Setpoint": humidity,
+            })
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
+        result = await self._client._post_json(url, json=data)
+        _LOG.debug("Received Dehumidifier setting response %s", result)
+        if result is None or not result.ok:
+            raise APIError("API rejected humidity settings")
+        
+    async def set_dehumidifier_auto(self) -> None:
+        """Set humidity settings."""
+        data = self._gdata['Dehumidifier']
+        data.update({"Mode": 1})
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
+        result = await self._client._post_json(url, json=data)
+        _LOG.debug("Received Dehumidifier setting response %s", result)
+        if result is None or not result.ok:
+            raise APIError("API rejected humidity settings")
+
+    async def set_dehumidifier_off(self) -> None:
+        """Set humidity settings."""
+        data = self._gdata['Dehumidifier']
+        data.update({"Mode": 0})
+        _LOG.debug("Sending Data: %s", data)
+        url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
+        result = await self._client._post_json(url, json=data)
+        _LOG.debug("Received Dehumidifier setting response %s", result)
+        if result is None or not result.ok:
+            raise APIError("API rejected humidity settings")
+
+
     @property
     def raw_ui_data(self) -> dict:
         """The raw uiData structure from the API.
