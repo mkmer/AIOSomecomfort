@@ -322,7 +322,7 @@ class Device(object):
     @property
     def dehumidifier_mode(self) -> int:
         """Dehumidifier Mode. 1 = auto, 0 = off."""
-        return int(self._gdata['Humidifier'].get('Mode'))
+        return int(self._gdata['Dehumidifier'].get('Mode'))
 
 
     @property
