@@ -23,7 +23,7 @@ def _hold_deadline(quarter_hours) -> datetime.time:
     minutes = quarter_hours * 15
     return datetime.time(hour=int(minutes / 60), minute=minutes % 60)
 
-def _humidity_step(self,value:int) -> int:
+def _humidity_step(value:int) -> int:
     """Round value to steps of 5."""
     return HUMIDITY_STEP * round (value/HUMIDITY_STEP)
 
