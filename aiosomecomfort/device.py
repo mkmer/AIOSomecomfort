@@ -172,7 +172,12 @@ class Device(object):
             data.update({"HeatSetpoint": temp-deadband})
         else:
             data.update({"HeatSetpoint": heatsp})
-        
+
+        data.update( {
+                "StatusCool": HOLD_TYPES.index("temporary"),
+                "StatusHeat": HOLD_TYPES.index("temporary"),
+        })
+
         await self._client.set_thermostat_settings(
             self.deviceid, data
         )
@@ -201,6 +206,12 @@ class Device(object):
             data.update({"CoolSetpoint": temp+deadband})
         else:
             data.update({"CoolSetpoint": coolsp})
+            
+        if not _get_hold("Heat") and not _get_hold("Cool"):
+            data.update( {
+                    "StatusCool": HOLD_TYPES.index("temporary"),
+                    "StatusHeat": HOLD_TYPES.index("temporary"),
+            })
         
         await self._client.set_thermostat_settings(
             self.deviceid, data
