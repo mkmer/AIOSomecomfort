@@ -18,13 +18,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 async def get_or_set_things(client, args, device, settables, gettables):
     for thing in settables:
-        value = await getattr(args, "set_%s" % thing)
+        value = getattr(args, "set_%s" % thing)
         if value is not None:
             setattr(device, thing, value)
             return 0
 
     for thing in gettables:
-        isset = await getattr(args, "get_%s" % thing)
+        isset = getattr(args, "get_%s" % thing)
         if isset:
             print(getattr(device, thing))
             return 0
