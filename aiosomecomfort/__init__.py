@@ -90,8 +90,8 @@ class AIOSomeComfort(object):
         # The TUREHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
         cookies = resp.cookies
         if AUTH_COOKIE in cookies:
-            cookies[AUTH_COOKIE]["expires"] = ""
-            self._session.cookie_jar.update_cookies(cookies=cookies)
+            cookies[AUTH_COOKIE]["expires"] = ''
+            self._session.cookie_jar.update_cookies(cookies=cookies, response_url=URL(resp.host) )
 
         if resp.status == 401:
             # This never seems to happen currently, but
@@ -157,8 +157,8 @@ class AIOSomeComfort(object):
         # API sends a null cookie if really want it to expire
         cookies = resp.cookies
         if AUTH_COOKIE in cookies:
-            cookies[AUTH_COOKIE]["expires"] = ""
-            self._session.cookie_jar.update_cookies(cookies=cookies)
+            cookies[AUTH_COOKIE]["expires"] = ''
+            self._session.cookie_jar.update_cookies(cookies=cookies, response_url=URL(resp.host) )
 
         req = args[0].replace(self._baseurl, "")
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
