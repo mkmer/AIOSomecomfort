@@ -11,7 +11,7 @@ from .exceptions import *
 _LOG = logging.getLogger("somecomfort")
 
 AUTH_COOKIE = ".ASPXAUTH_TRUEHOME"
-DOMAIN = "www.mytotalconnectcomfort.com"
+DOMAIN = "mytotalconnectcomfort.com"
 MIN_LOGIN_TIME = datetime.timedelta(minutes=10)
 MAX_LOGIN_ATTEMPTS = 3
 
