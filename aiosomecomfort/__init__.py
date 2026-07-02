@@ -93,22 +93,27 @@ class AIOSomeComfort(object):
     @_convert_errors
     async def login(self) -> None:
         """Login to Honeywell API."""
-        url = f"{self._baseurl}/portal"
-        params = {
+        url = URL(f"{self._baseurl}/portal")
+        # Credentials are sent in the POST body (application/x-www-form-urlencoded)
+        # so they never appear in the URL, access logs, proxy logs, or TraceConfig
+        # hooks.  urllib.urlencode is used directly so that special characters such
+        # as "@" in the username are encoded as "%40" — the encoding the API
+        # requires.  aiohttp's built-in params= keyword does not produce that
+        # encoding, which is why we build the body string ourselves.
+        body_params = {
             "timeOffset": "480",
             "UserName": self._username,
             "Password": self._password,
             "RememberMe": "false",
         }
         self._headers["Content-Type"] = "application/x-www-form-urlencoded"
-        # can't use params because AIOHttp doesn't URL encode like API expects (%40 for @)
-        url = URL(f"{url}?{urllib.urlencode(params)}", encoded=True)
+        body = urllib.urlencode(body_params)
 
         if self._next_login > datetime.datetime.now(datetime.timezone.utc):
             raise APIRateLimited(f"Rate limit on login: Waiting {MIN_LOGIN_TIME}")
 
         resp = await self._session.post(
-            url, timeout=self._timeout, headers=self._headers
+            url, data=body, timeout=self._timeout, headers=self._headers
         )
         _LOG.debug("Login Response %s", await resp.text())
         # The TRUEHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
