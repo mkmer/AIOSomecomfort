@@ -1,0 +1,14 @@
+{
+  "affected_projects": [],
+  "audit_job_id": null,
+  "category": "security",
+  "created_at": "2026-07-02T15:41:51.410364+00:00",
+  "file": "aiosomecomfort/__init__.py",
+  "line": 86,
+  "mode": "finding",
+  "project_path": null,
+  "ref": "HYRAX-2",
+  "severity": "high",
+  "title": "Credentials sent in URL query string (logged in plaintext via debug logging)",
+  "tool": "mini_audit"
+}
