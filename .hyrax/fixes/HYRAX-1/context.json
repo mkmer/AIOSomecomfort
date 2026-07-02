@@ -1,0 +1,14 @@
+{
+  "affected_projects": [],
+  "audit_job_id": null,
+  "category": "correctness",
+  "created_at": "2026-07-02T14:56:00.523009+00:00",
+  "file": "aiosomecomfort/__init__.py",
+  "line": 19,
+  "mode": "finding",
+  "project_path": null,
+  "ref": "HYRAX-1",
+  "severity": "critical",
+  "title": "`_convert_errors` wrapper is not async \u2014 decorated coroutines are called synchronously and their result is never awaited",
+  "tool": "mini_audit"
+}
