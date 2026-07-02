@@ -10,7 +10,7 @@ SYSTEM_MODES = ["emheat", "heat", "off", "cool", "auto", "auto"]
 HOLD_TYPES = ["schedule", "temporary", "permanent"]
 EQUIPMENT_OUTPUT_STATUS = ["off/fan", "heat", "cool"]
 _LOG = logging.getLogger("somecomfort")
-HUMIDITY_STEP = 5 
+HUMIDITY_STEP = 5
 
 
 def _hold_quarter_hours(deadline):
@@ -23,9 +23,10 @@ def _hold_deadline(quarter_hours) -> datetime.time:
     minutes = quarter_hours * 15
     return datetime.time(hour=int(minutes / 60), minute=minutes % 60)
 
-def _humidity_step(value:int) -> int:
+
+def _humidity_step(value: int) -> int:
     """Round value to steps of 5."""
-    return HUMIDITY_STEP * round (value/HUMIDITY_STEP)
+    return HUMIDITY_STEP * round(value / HUMIDITY_STEP)
 
 
 class Device(object):
@@ -56,7 +57,9 @@ class Device(object):
     async def refresh(self) -> None:
         """Refresh the Honeywell device data."""
         if self._client.next_login > datetime.datetime.now(datetime.timezone.utc):
-             raise APIRateLimited(f"Rate limit on login: Waiting {self._client.next_login-datetime.datetime.now(datetime.timezone.utc)}")
+            raise APIRateLimited(
+                f"Rate limit on login: Waiting {self._client.next_login - datetime.datetime.now(datetime.timezone.utc)}"
+            )
         data = await self._client.get_thermostat_data(self.deviceid)
         _LOG.debug("Refresh data %s", data)
         if data is not None:
@@ -65,7 +68,11 @@ class Device(object):
             self._alive = data.get("deviceLive")
             self._commslost = data.get("communicationLost")
             self._data = data.get("latestData")
-            if not self._gdata or self._gdata.get("Humidifier") or self._gdata.get("Dehumidifier"):
+            if (
+                not self._gdata
+                or self._gdata.get("Humidifier")
+                or self._gdata.get("Dehumidifier")
+            ):
                 self._gdata = await self._client.get_data(self.deviceid)
             self._last_refresh = time.time()
 
@@ -103,7 +110,7 @@ class Device(object):
             return FAN_MODES[self._data["fanData"]["fanMode"]]
         except (KeyError, TypeError, IndexError):
             if self._data["hasFan"]:
-                raise APIError(f'Unknown fan mode {self._data["fanData"]["fanMode"]}')
+                raise APIError(f"Unknown fan mode {self._data['fanData']['fanMode']}")
             else:
                 return None
 
@@ -160,7 +167,7 @@ class Device(object):
     async def set_setpoint_cool(self, temp) -> None:
         """Async set the target temperature when in cooling mode"""
         lower = self._data["uiData"]["CoolLowerSetptLimit"]
-        upper = self._data["uiData"]["CoolUpperSetptLimit"]        
+        upper = self._data["uiData"]["CoolUpperSetptLimit"]
         deadband = self._data["uiData"]["Deadband"]
         heatsp = self._data["uiData"]["HeatSetpoint"]
 
@@ -169,18 +176,18 @@ class Device(object):
         data = {"CoolSetpoint": temp}
 
         if deadband > 0 and (heatsp + deadband) >= temp:
-            data.update({"HeatSetpoint": temp-deadband})
+            data.update({"HeatSetpoint": temp - deadband})
         else:
             data.update({"HeatSetpoint": heatsp})
         if not self._get_hold("Heat") and not self._get_hold("Cool"):
-            data.update( {
+            data.update(
+                {
                     "StatusCool": HOLD_TYPES.index("temporary"),
                     "StatusHeat": HOLD_TYPES.index("temporary"),
-            })
+                }
+            )
 
-        await self._client.set_thermostat_settings(
-            self.deviceid, data
-        )
+        await self._client.set_thermostat_settings(self.deviceid, data)
         self._data["uiData"]["CoolSetpoint"] = temp
 
     @property
@@ -191,7 +198,7 @@ class Device(object):
     async def set_setpoint_heat(self, temp) -> None:
         """Async set the target temperature when in heating mode"""
         lower = self._data["uiData"]["HeatLowerSetptLimit"]
-        upper = self._data["uiData"]["HeatUpperSetptLimit"]        
+        upper = self._data["uiData"]["HeatUpperSetptLimit"]
         deadband = self._data["uiData"]["Deadband"]
         coolsp = self._data["uiData"]["CoolSetpoint"]
         # HA sometimes doesn't send the temp, so set to current
@@ -203,19 +210,19 @@ class Device(object):
         data = {"HeatSetpoint": temp}
 
         if deadband > 0 and (coolsp - deadband) <= temp:
-            data.update({"CoolSetpoint": temp+deadband})
+            data.update({"CoolSetpoint": temp + deadband})
         else:
             data.update({"CoolSetpoint": coolsp})
-            
+
         if not self._get_hold("Heat") and not self._get_hold("Cool"):
-            data.update( {
+            data.update(
+                {
                     "StatusCool": HOLD_TYPES.index("temporary"),
                     "StatusHeat": HOLD_TYPES.index("temporary"),
-            })
-        
-        await self._client.set_thermostat_settings(
-            self.deviceid, data
-        )
+                }
+            )
+
+        await self._client.set_thermostat_settings(self.deviceid, data)
         self._data["uiData"]["HeatSetpoint"] = temp
 
     def _get_hold(self, which) -> bool | datetime.time:
@@ -263,9 +270,9 @@ class Device(object):
             if temperature > upper or temperature < lower:
                 raise SomeComfortError(f"Setpoint outside range {lower}-{upper}")
             if which == "Heat" and deadband > 0 and (coolsp - deadband) <= temperature:
-                settings.update({"CoolSetpoint": temperature+deadband})
+                settings.update({"CoolSetpoint": temperature + deadband})
             if which == "Cool" and deadband > 0 and (heatsp + deadband) >= temperature:
-                settings.update({"HeatSetpoint": temperature-deadband})
+                settings.update({"HeatSetpoint": temperature - deadband})
             settings.update({f"{which}Setpoint": temperature})
         await self._client.set_thermostat_settings(self.deviceid, settings)
         self._data["uiData"].update(settings)
@@ -296,53 +303,52 @@ class Device(object):
     @property
     def has_humidifier(self) -> bool:
         """System has humdifier."""
-        return(self._gdata.get("Humidifier") is not None)
-    
+        return self._gdata.get("Humidifier") is not None
+
     @property
     def humidifier_upper_limit(self) -> int:
         """Humidifier upper limit."""
-        return int(self._gdata['Humidifier'].get('UpperLimit'))
-    
+        return int(self._gdata["Humidifier"].get("UpperLimit"))
+
     @property
     def humidifier_lower_limit(self) -> int:
         """Humidifier lower limit."""
-        return int(self._gdata['Humidifier'].get('LowerLimit'))
-    
+        return int(self._gdata["Humidifier"].get("LowerLimit"))
+
     @property
     def humidifier_setpoint(self) -> int:
         """Humidifier current setpoint."""
-        return int(self._gdata['Humidifier'].get('Setpoint'))
+        return int(self._gdata["Humidifier"].get("Setpoint"))
 
     @property
     def humidifier_mode(self) -> int:
         """Humidifier mode: 1 = auto, 0 = off."""
-        return int(self._gdata['Humidifier'].get('Mode'))
+        return int(self._gdata["Humidifier"].get("Mode"))
 
     @property
     def has_dehumidifier(self) -> bool:
         """System has dehumidifier."""
-        return(self._gdata.get("Dehumidifier") is not None)
+        return self._gdata.get("Dehumidifier") is not None
 
     @property
     def dehumidifier_upper_limit(self) -> int:
         """Dehumidifier upper limit."""
-        return int(self._gdata['Dehumidifier'].get('UpperLimit'))
-    
+        return int(self._gdata["Dehumidifier"].get("UpperLimit"))
+
     @property
     def dehumidifier_setpoint(self) -> int:
         """Dehumidifer current setpoint."""
-        return int(self._gdata['Dehumidifier'].get('Setpoint'))
+        return int(self._gdata["Dehumidifier"].get("Setpoint"))
 
     @property
     def dehumidifier_lower_limit(self) -> int:
         """Dehmidifer lower limig."""
-        return int(self._gdata['Dehumidifier'].get('LowerLimit'))
+        return int(self._gdata["Dehumidifier"].get("LowerLimit"))
 
     @property
     def dehumidifier_mode(self) -> int:
         """Dehumidifier Mode. 1 = auto, 0 = off."""
-        return int(self._gdata['Dehumidifier'].get('Mode'))
-
+        return int(self._gdata["Dehumidifier"].get("Mode"))
 
     @property
     def current_humidity(self) -> float | None:
@@ -385,20 +391,22 @@ class Device(object):
 
     async def set_humidifier_setpoint(self, humidity: int) -> None:
         """Set humidity settings."""
-        data = self._gdata['Humidifier']
-        data.update({
-            "Setpoint": _humidity_step(humidity),
-            })
+        data = self._gdata["Humidifier"]
+        data.update(
+            {
+                "Setpoint": _humidity_step(humidity),
+            }
+        )
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
         result = await self._client._post_json(url, json=data)
         _LOG.debug("Received Humidifier setting response %s", result)
         if result is None or not result.ok:
             raise APIError("API rejected humidity settings")
-        
+
     async def set_humidifier_auto(self) -> None:
         """Set humidity settings."""
-        data = self._gdata['Humidifier']
+        data = self._gdata["Humidifier"]
         data.update({"Mode": 1})
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
@@ -409,7 +417,7 @@ class Device(object):
 
     async def set_humidifier_off(self) -> None:
         """Set humidity settings."""
-        data = self._gdata['Humidifier']
+        data = self._gdata["Humidifier"]
         data.update({"Mode": 0})
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Humidifier"
@@ -420,20 +428,22 @@ class Device(object):
 
     async def set_dehumidifier_setpoint(self, humidity: int) -> None:
         """Set humidity settings."""
-        data = self._gdata['Dehumidifier']
-        data.update({
-            "Setpoint": _humidity_step(humidity),
-            })
+        data = self._gdata["Dehumidifier"]
+        data.update(
+            {
+                "Setpoint": _humidity_step(humidity),
+            }
+        )
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
         result = await self._client._post_json(url, json=data)
         _LOG.debug("Received Dehumidifier setting response %s", result)
         if result is None or not result.ok:
             raise APIError("API rejected humidity settings")
-        
+
     async def set_dehumidifier_auto(self) -> None:
         """Set humidity settings."""
-        data = self._gdata['Dehumidifier']
+        data = self._gdata["Dehumidifier"]
         data.update({"Mode": 1})
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
@@ -444,7 +454,7 @@ class Device(object):
 
     async def set_dehumidifier_off(self) -> None:
         """Set humidity settings."""
-        data = self._gdata['Dehumidifier']
+        data = self._gdata["Dehumidifier"]
         data.update({"Mode": 0})
         _LOG.debug("Sending Data: %s", data)
         url = f"{self._client._baseurl}/portal/Device/Menu/Dehumidifier"
@@ -452,7 +462,6 @@ class Device(object):
         _LOG.debug("Received Dehumidifier setting response %s", result)
         if result is None or not result.ok:
             raise APIError("API rejected humidity settings")
-
 
     @property
     def raw_ui_data(self) -> dict:
@@ -477,7 +486,7 @@ class Device(object):
         Note that this is read only!
         """
         return copy.deepcopy(self._data["drData"])
-    
+
     @property
     def raw_data(self) -> dict:
         """The raw drData structure from the API.
@@ -485,6 +494,6 @@ class Device(object):
         Note that this is read only!
         """
         return copy.deepcopy(self._gdata)
-        
+
     def __repr__(self) -> str:
         return f"Device<{self.deviceid}:{self.name}>"
