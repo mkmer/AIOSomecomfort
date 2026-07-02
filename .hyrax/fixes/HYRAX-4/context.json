@@ -1,0 +1,14 @@
+{
+  "affected_projects": [],
+  "audit_job_id": null,
+  "category": "correctness",
+  "created_at": "2026-07-02T15:02:11.506223+00:00",
+  "file": "aiosomecomfort/__init__.py",
+  "line": 95,
+  "mode": "finding",
+  "project_path": null,
+  "ref": "HYRAX-4",
+  "severity": "high",
+  "title": "`URL(resp.host)` builds a malformed URL \u2014 cookies may be stored/matched against wrong origin",
+  "tool": "mini_audit"
+}
