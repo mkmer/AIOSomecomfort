@@ -52,7 +52,7 @@ class AIOSomeComfort(object):
         self._baseurl = f"https://{DOMAIN}"
         self._null_cookie_count = 0
         self._next_login = datetime.datetime.now(datetime.timezone.utc)
-        self._counter = 1700000000000 # sequnce for polling
+        self._counter = 1700000000000  # sequnce for polling
 
     @property
     def next_login(self) -> datetime:
@@ -64,7 +64,9 @@ class AIOSomeComfort(object):
 
         self._null_cookie_count += 1
         if self._null_cookie_count >= MAX_LOGIN_ATTEMPTS:
-            self._next_login = datetime.datetime.now(datetime.timezone.utc) + MIN_LOGIN_TIME
+            self._next_login = (
+                datetime.datetime.now(datetime.timezone.utc) + MIN_LOGIN_TIME
+            )
 
     @_convert_errors
     async def login(self) -> None:
@@ -91,8 +93,10 @@ class AIOSomeComfort(object):
         cookies = resp.cookies
         _LOG.debug("Cookies: %s", cookies)
         if AUTH_COOKIE in cookies:
-            cookies[AUTH_COOKIE]["expires"] = ''
-            self._session.cookie_jar.update_cookies(cookies=cookies, response_url=URL(resp.host) )
+            cookies[AUTH_COOKIE]["expires"] = ""
+            self._session.cookie_jar.update_cookies(
+                cookies=cookies, response_url=URL(resp.host)
+            )
 
         if resp.status == 401:
             # This never seems to happen currently, but
@@ -145,7 +149,6 @@ class AIOSomeComfort(object):
         )
         _LOG.debug("LogOff Response %s", await resp.text())
 
-
     async def _request_json(self, method: str, *args, **kwargs) -> str | None:
         if "timeout" not in kwargs:
             kwargs["timeout"] = self._timeout
@@ -159,12 +162,16 @@ class AIOSomeComfort(object):
         cookies = resp.cookies
         _LOG.debug("Cookies: %s", cookies)
         if AUTH_COOKIE in cookies:
-            cookies[AUTH_COOKIE]["expires"] = ''
-            self._session.cookie_jar.update_cookies(cookies=cookies, response_url=URL(resp.host) )
+            cookies[AUTH_COOKIE]["expires"] = ""
+            self._session.cookie_jar.update_cookies(
+                cookies=cookies, response_url=URL(resp.host)
+            )
 
         req = args[0].replace(self._baseurl, "")
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
-        if resp.status == 200 and (resp.content_type in ["application/json","application/octet-stream"]):
+        if resp.status == 200 and (
+            resp.content_type in ["application/json", "application/octet-stream"]
+        ):
             self._null_cookie_count = 0
             if resp.content_type == "application/json":
                 return await resp.json()
@@ -178,7 +185,7 @@ class AIOSomeComfort(object):
             _LOG.error("403 Error at update (Key expired?).")
             raise UnauthorizedError("403 Error at update (Key Expired?).")
 
-        if resp.status in [500,502,503] or len(resp.history) > 0:
+        if resp.status in [500, 502, 503] or len(resp.history) > 0:
             _LOG.error("Service Unavailable %s, %s.", resp.status, resp.history)
             raise ConnectionError(f"Service Unavailable {resp.status}.")
 
@@ -204,13 +211,15 @@ class AIOSomeComfort(object):
             cookies = resp.cookies
             _LOG.debug("Cookies: %s", cookies)
             if AUTH_COOKIE in cookies:
-                cookies[AUTH_COOKIE]["expires"] = ''
-                self._session.cookie_jar.update_cookies(cookies=cookies, response_url=URL(resp.host))
+                cookies[AUTH_COOKIE]["expires"] = ""
+                self._session.cookie_jar.update_cookies(
+                    cookies=cookies, response_url=URL(resp.host)
+                )
         if len(json_responses) > 0:
             return json_responses
         return None
 
-    async def get_data(self,thermostat_id: str) -> str:
+    async def get_data(self, thermostat_id: str) -> str:
         """Get device total data structure."""
         url = f"{self._baseurl}/portal/Device/Menu/GetData?deviceID={thermostat_id}"
         return await self._post_json(url)
@@ -218,7 +227,7 @@ class AIOSomeComfort(object):
     async def get_thermostat_data(self, thermostat_id: str) -> str:
         """Get thermostat data from API"""
         url = f"{self._baseurl}/portal/Device/CheckDataSession/{thermostat_id}?_={self._counter}"
-        self._counter+=1
+        self._counter += 1
         return await self._get_json(url)
 
     async def get_humidifier_data(self, thermostat_id: str) -> str:
@@ -265,10 +274,12 @@ class AIOSomeComfort(object):
                     location = await Location.from_api_response(self, raw_location)
                 except KeyError as ex:
                     _LOG.exception(
-                        "Failed to process location `%s`: missing %s element"
-                        , raw_location.get("LocationID", "unknown"), ex.args[0]
+                        "Failed to process location `%s`: missing %s element",
+                        raw_location.get("LocationID", "unknown"),
+                        ex.args[0],
                     )
-                self._locations[location.locationid] = location
+                else:
+                    self._locations[location.locationid] = location
 
     @property
     def locations_by_id(self) -> dict:
