@@ -216,9 +216,37 @@ class AIOSomeComfort(object):
         for page in range(1, 5):  # pages 1 - 4
             params = {"page": page, "filter": ""}
             resp = await self._session.post(url, params=params, headers=self._headers)
+            self._update_auth_cookie(resp)
+
+            if resp.status == 401:
+                _LOG.error("401 Error fetching locations (session expired?).")
+                raise UnauthorizedError(
+                    "401 Error fetching locations (session expired?)."
+                )
+
+            if resp.status == 403:
+                _LOG.error("403 Error fetching locations (access denied).")
+                raise UnauthorizedError("403 Error fetching locations (access denied).")
+
+            if resp.status in [500, 502, 503] or len(resp.history) > 0:
+                _LOG.error(
+                    "Service unavailable fetching locations %s, %s.",
+                    resp.status,
+                    resp.history,
+                )
+                raise ConnectionError(
+                    f"Service unavailable fetching locations {resp.status}."
+                )
+
+            if resp.status != 200:
+                _LOG.error("Unexpected status fetching locations: %s.", resp.status)
+                raise UnexpectedResponse(
+                    f"Unexpected status fetching locations: {resp.status}."
+                )
+
             if resp.content_type == "application/json":
                 json_responses.extend(await resp.json())
-            self._update_auth_cookie(resp)
+
         if len(json_responses) > 0:
             return json_responses
         return None
