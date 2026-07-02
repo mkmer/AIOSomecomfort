@@ -70,6 +70,26 @@ class AIOSomeComfort(object):
                 datetime.datetime.now(datetime.timezone.utc) + MIN_LOGIN_TIME
             )
 
+    def _update_auth_cookie(self, resp: aiohttp.ClientResponse) -> None:
+        """Clear the malformed expiry on the auth cookie and store it correctly.
+
+        The API sends a .ASPXAUTH_TRUEHOME cookie with a broken 'expires'
+        value that aiohttp cannot parse.  We clear the expiry field before
+        handing the cookie to the jar.  We use ``resp.url`` (a fully-formed
+        yarl.URL with scheme and host) as the scoping URL so the jar stores
+        the cookie against the correct origin.  Previously the code passed
+        ``URL(resp.host)`` which produced a relative/path URL (no scheme,
+        host=None) because yarl treats a bare hostname string as a path
+        component, causing the cookie to be stored under the wrong scope.
+        """
+        cookies = resp.cookies
+        _LOG.debug("Cookies: %s", cookies)
+        if AUTH_COOKIE in cookies:
+            cookies[AUTH_COOKIE]["expires"] = ""
+            self._session.cookie_jar.update_cookies(
+                cookies=cookies, response_url=resp.url
+            )
+
     @_convert_errors
     async def login(self) -> None:
         """Login to Honeywell API."""
@@ -91,14 +111,8 @@ class AIOSomeComfort(object):
             url, timeout=self._timeout, headers=self._headers
         )
         _LOG.debug("Login Response %s", await resp.text())
-        # The TUREHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
-        cookies = resp.cookies
-        _LOG.debug("Cookies: %s", cookies)
-        if AUTH_COOKIE in cookies:
-            cookies[AUTH_COOKIE]["expires"] = ""
-            self._session.cookie_jar.update_cookies(
-                cookies=cookies, response_url=URL(resp.host)
-            )
+        # The TRUEHOME cookie is malformed in some way - need to clear the expiration to make it work with AIOhttp
+        self._update_auth_cookie(resp)
 
         if resp.status == 401:
             # This never seems to happen currently, but
@@ -161,13 +175,7 @@ class AIOSomeComfort(object):
 
         # Check again for the deformed cookie
         # API sends a null cookie if really want it to expire
-        cookies = resp.cookies
-        _LOG.debug("Cookies: %s", cookies)
-        if AUTH_COOKIE in cookies:
-            cookies[AUTH_COOKIE]["expires"] = ""
-            self._session.cookie_jar.update_cookies(
-                cookies=cookies, response_url=URL(resp.host)
-            )
+        self._update_auth_cookie(resp)
 
         req = args[0].replace(self._baseurl, "")
         _LOG.debug("request json response %s with payload %s", resp, await resp.text())
@@ -210,13 +218,7 @@ class AIOSomeComfort(object):
             resp = await self._session.post(url, params=params, headers=self._headers)
             if resp.content_type == "application/json":
                 json_responses.extend(await resp.json())
-            cookies = resp.cookies
-            _LOG.debug("Cookies: %s", cookies)
-            if AUTH_COOKIE in cookies:
-                cookies[AUTH_COOKIE]["expires"] = ""
-                self._session.cookie_jar.update_cookies(
-                    cookies=cookies, response_url=URL(resp.host)
-                )
+            self._update_auth_cookie(resp)
         if len(json_responses) > 0:
             return json_responses
         return None
