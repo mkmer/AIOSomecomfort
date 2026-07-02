@@ -1,5 +1,6 @@
 from __future__ import annotations
 import datetime
+import functools
 import logging
 import urllib.parse as urllib
 import aiohttp
@@ -17,9 +18,10 @@ MAX_LOGIN_ATTEMPTS = 3
 
 
 def _convert_errors(fn):
-    def wrapper(*args, **kwargs):
+    @functools.wraps(fn)
+    async def wrapper(*args, **kwargs):
         try:
-            return fn(*args, **kwargs)
+            return await fn(*args, **kwargs)
 
         except aiohttp.ClientError as ex:
             _LOG.error("Connection Timeout")
