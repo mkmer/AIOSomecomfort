@@ -361,14 +361,22 @@ class Device(object):
         )
 
     @property
-    def equipment_output_status(self) -> str:
-        """The current equipment output status"""
-        if self._data["uiData"]["EquipmentOutputStatus"] in (0, None):
+    def equipment_output_status(self) -> str | None:
+        """The current equipment output status.
+
+        Returns ``None`` when the device never reports EquipmentOutputStatus
+        (the raw value is ``None``) and the fan is not running, so callers can
+        distinguish "unknown" from a genuine idle ("off") report. Some models
+        never send this field to the cloud API at all.
+        """
+        raw_status = self._data["uiData"]["EquipmentOutputStatus"]
+        if raw_status in (0, None):
             if self.fan_running:
                 return "fan"
-            else:
-                return "off"
-        return EQUIPMENT_OUTPUT_STATUS[self._data["uiData"]["EquipmentOutputStatus"]]
+            if raw_status is None:
+                return None
+            return "off"
+        return EQUIPMENT_OUTPUT_STATUS[raw_status]
 
     @property
     def outdoor_temperature(self) -> float | None:
